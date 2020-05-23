@@ -9,7 +9,7 @@ Here is the docstring:
 ``
 "takes in a list that you want to validate, and a template, the template is a list of lists,
 each list contains keywords and their values (a list of the keywords is in *valid-syms*). Each list
-within the template represents 1 element in the template and is a 'description' of its contents. 
+within the template represents 1 element in the list and is a 'description' of its contents. 
 For example given the template '((:equal \"key\") (:type string :maxlen 40)) this could be used
 to validate the list '(\"key\" \"abcdeegadfgfsdf\") because as the template says, the first item in 
 list is \"key\" and the second according to the template should be of type 'string and no longer
