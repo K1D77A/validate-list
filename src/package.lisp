@@ -5,6 +5,7 @@
   (:export #:validate-list-p
            #:define-key
            #:repeat-pattern
+           #:current-keys
            #:repeat-test
            #:unknown-keyword
            #:unknown-keyword-message

@@ -15,10 +15,10 @@
 ;;;;'((:equal "year")(:type integer :between (2100 1900))
 ;;;;  ((:equal "country")(:type string :maxlen 50))
 
-
-(defvar *current-keys* '())
-
 (defvar *functions* (make-hash-table :test #'eq))
+
+(defun current-keys ()
+  (alexandria:hash-table-keys *functions*))
 
 (define-condition failed-to-validate (error)
   ((key
@@ -77,65 +77,76 @@ repeated LENGTH times"
                       (check-type arg number)
                       (= entry arg)))
   Now with the new keyword :n= defined this can be used in a template like so where list is '(100)
-  and the template is '((:n= 100)). 
+  and the template is '((:n= 100)).
 "
   (check-type key keyword)
   (check-type func function)
   (setf (gethash key *functions*)
-        func)
-  (push key *current-keys*))
+        func))
 
-(define-key :type
-    (lambda (entry type)
-      (check-type type symbol)
-      (typep entry type)))
+(defun handle-type (entry type)
+  (check-type type symbol)
+  (typep entry type))
 
-(define-key :minlen
-    (lambda (entry minlen)
-      (check-type minlen (integer 0))
-      (greater-than-or-equal (length entry) minlen)))
+(define-key :type #'handle-type)
 
-(define-key :maxlen
-    (lambda (entry maxlen)
-      (check-type maxlen (integer 1))
-      (greater-than-or-equal maxlen (length entry))))
+(defun handle-minlen (entry minlen)
+  (check-type minlen (integer 0))
+  (greater-than-or-equal (length entry) minlen))
 
-(define-key :less-than
-    (lambda (entry less-than)
-      (check-type less-than number)
-      (check-type entry number)
-      (less-than entry less-than)))
+(define-key :minlen #'handle-minlen)
 
-(define-key :greater-than
-    (lambda (entry greater-than)
-      (check-type greater-than number)
-      (check-type entry number)
-      (greater-than entry greater-than)))
+(defun handle-maxlen (entry maxlen)
+  (check-type maxlen (integer 1))
+  (greater-than-or-equal maxlen (length entry)))
 
-(define-key :or
-    (lambda (entry list-of-potentials)
-      (find entry list-of-potentials :test #'equalp)))
+(define-key :maxlen #'handle-maxlen)
+    
+(defun handle-less-than (entry less-than)
+  (check-type less-than number)
+  (check-type entry number)
+  (less-than entry less-than))
 
-(define-key :equal
-    (lambda (entry equal)
-      (equalp entry equal)))
+(define-key :less-than #'handle-less-than)
 
-(define-key :satisfies
-    (lambda (entry func)
-      (check-type func (or function list))
-      (typecase func
-        (list (some (lambda (func)
-                      (funcall func entry))
-                    func))
-        (function (funcall func entry)))))
+(defun handle-greater-than (entry greater-than)
+  (check-type greater-than number)
+  (check-type entry number)
+  (greater-than entry greater-than))
 
-(define-key :between
-    (lambda (entry between-list)
-      (check-type entry number)
-      (check-type between-list list)
-      (let ((max (reduce #'max between-list))
-            (min (reduce #'min between-list)))
-        (greater-than max entry min))))
+(define-key :greater-than #'greater-than)
+
+(defun handle-or (entry list-of-potentials)
+  (check-type list-of-potentials list)
+  (some (lambda (pot)
+          (equalp pot entry))
+        list-of-potentials))
+
+(define-key :or #'handle-or)
+
+(defun handle-equal (entry equal)
+  (equalp entry equal))
+
+(define-key :equal #'handle-equal)
+
+(defun handle-satisfies (entry func)
+  (check-type func (or function list))
+  (typecase func
+    (list (some (lambda (func)
+                  (funcall func entry))
+                func))
+    (function (funcall func entry))))
+
+(define-key :satisfies #'handle-satisfies)
+
+(defun handle-between (entry between-list)
+  (check-type entry number)
+  (check-type between-list list)
+  (let ((max (reduce #'max between-list))
+        (min (reduce #'min between-list)))
+    (greater-than max entry min)))
+
+(define-key :between #'handle-between)
 
 (defun map-plist (func plist)
   "Maps a PLIST and calls FUNC that accepts two arguments. returns a list of
@@ -207,7 +218,7 @@ element of a list being passed as args to a function"
 
 (defun validate-list-p (list template)
   "Takes in a LIST that you want to validate, and a TEMPLATE, the TEMPLATE is a list of lists,
-each list contains keywords and their values (a list of the keywords is in *current-keys*). Each list
+each list contains keywords and their values (a full list of keys can be found by calling CURRENT-KEYS). Each list
 within the template represents 1 element in the LIST and is a 'description' of its contents. 
 For example given the template '((:equal \"key\") (:type string :maxlen 40)) this could be used
 to validate the list '(\"key\" \"abcdeegadfgfsdf\") because as the template says, the first item in 
