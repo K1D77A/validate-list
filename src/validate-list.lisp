@@ -128,7 +128,7 @@ repeated LENGTH times"
                       (check-type entry number)
                       (check-type arg number)
                       (= entry arg)))
-  Now with the new symbol :n= defined this can be used in a template like so where list is '(100)
+  Now with the new keyword :n= defined this can be used in a template like so where list is '(100)
   and the template is '((:n= 100)). 
 "
   (check-type key keyword)
