@@ -2,7 +2,8 @@
 
 (defpackage #:validate-list
   (:use #:cl)
-  (:export #:validate-list-p)
+  (:export #:validate-list-p
+           #:add-new-symbol)
   (:shadowing-import-from
    #:arithmetic-operators-as-words
    #:less-than

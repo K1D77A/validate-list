@@ -27,6 +27,27 @@
 (defparameter *test-template2* '((:equal "year")(:type integer :between (2100 1900))
                                  ((:or ("cookie" "country"))(:type string :maxlen 50))))
 
+(defvar *other-symbols* (make-hash-table :test #'eq))
+
+(defun add-new-symbol (symbol function)
+  "Takes in a symbol and associates the symbol with the function. the function must accept two
+arguments, the first an entry ie a value in a list wanting to be validated and the second an object
+see any of the definitions of handle-* to get an idea what your lambda should look like. Here is 
+an example (add-new-symbol :n= 
+               (lambda (entry arg) 
+                       (check-type entry integer)
+                       (check-type arg integer)
+                       (= arg entry)))
+Now with the new symbol :n= defined this can be used in a template like so where list is '(100)
+and the template is '((:n= 100)). 
+
+"
+  (check-type symbol symbol)
+  (check-type function function)
+  (setf (gethash symbol *other-symbols*)
+        function))
+
+
 (defun handle-type (entry type)
   (check-type type symbol)
   (typep entry type))
@@ -104,7 +125,13 @@
     (:greater-than (handle-greater-than entry sym-arg))
     (:or           (handle-or entry sym-arg))
     (:satisfies    (handle-satisfies entry sym-arg))
-    (:otherwise    (error "invalid keyword"))));;change to a condition
+    (:otherwise    (let ((fun (gethash sym *other-symbols*)))
+                     (if fun
+                         (funcall fun entry sym-arg)
+                         (error "invalid keyword"))))));;change to a condition
+;;;should add a way to add new symbols which is pretty trivial, just a hashtable which associates
+;;;the symbols with a lambda that takes 1 arg, if call-right-fun-from-sym fails to find it
+;;;immediately then it can look in the hashtable and find the func and call it. ez
 
 (defun process-template-entry (template-entry entry)
   (map-plist (lambda (sym arg)
