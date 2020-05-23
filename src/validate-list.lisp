@@ -16,6 +16,18 @@
 ;;;;  ((:equal "country")(:type string :maxlen 50))
 
 ;;;;proposed symbols
+(defun repeat-test (length validation-list)
+  "returns a list of length 'length' which simply repeats validation-list"
+  (loop :for x :from 0 :below length
+        :collect validation-list))
+
+(defun repeat-pattern (length pattern-list)
+  "given a length and a pattern-list will return a list of length with pattern-list repeated length
+times"
+  (loop :for x :from 0 :below length
+        :appending pattern-list))
+
+
 (defparameter *valid-syms* '(:equal :type :between :minlen
                              :maxlen :less-than :greater-than
                              :or :satisfies))
@@ -26,6 +38,68 @@
 (defparameter *test-list2*  '("year" 2020 ("country" "USA")))
 (defparameter *test-template2* '((:equal "year")(:type integer :between (2100 1900))
                                  ((:or ("cookie" "country"))(:type string :maxlen 50))))
+
+(defparameter *test-list3*  '("year" 98 ("country" ("USA" "UK" "Poland"))))
+(defparameter *test-template3* '((:equal "year")(:type integer :or (96 97 98))
+                                 ((:or ("cookie" "country"))
+                                  ((:equal "USA")(:equal "UK")(:equal "Poland")))))
+
+(defparameter *test-list4*  '("year" 98 ("country" ("USA" "UK" "Poland"))))
+(defparameter *test-template4* `((:equal "year")(:type integer :or (96 97 98))
+                                 ((:or ("cookie" "country"))
+                                  ,(repeat-test 3 '(:type string :maxlen 6 :minlen 2)))))
+
+(defparameter *test-list5*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96))))
+(defparameter *test-template5* `((:equal "year")(:type integer :or (96 97 98))
+                                 ((:or ("cookie" "country" "keyvals"))
+                                  ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
+                                                       (:type number :between (0 100)))))))
+
+(defparameter *test-list6*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96))))
+(defparameter *test-template6* `((:equal "year")(:type integer :or (96 97 98))
+                                 ((:or ("cookie" "country" "keyvals"))
+                                  ,(repeat-pattern 4 '((:type string :maxlen 6 :minlen 2)
+                                                       (:type number :between (0 100)))))))
+;;;^should fail because the end is len 4 instead of len 3
+(defparameter *test-list7*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 4 6)))
+(defparameter *test-template7* `((:equal "year")(:type integer :or (96 97 98))
+                                 ((:or ("cookie" "country" "keyvals"))
+                                  ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
+                                                       (:type number :between (0 100)))))
+                                 ,(repeat-test 3 '(:type number :satisfies #'evenp))))
+
+(defparameter *test-list8*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 5 6)))
+(defparameter *test-template8* `((:equal "year")(:type integer :or (96 97 98))
+                                 ((:or ("cookie" "country" "keyvals"))
+                                  ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
+                                                       (:type number :between (0 100)))))
+                                 ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
+
+
+;;;for example if you have a list containing 3 elements and you just need to know they are strings
+;;;then you could just generate the code to do it
+;;;our list is ("USA" "UK" "Poland") this is 3 strings maxlen 6 and minlen 2 so we could just generate
+;;;((:type string :maxlen 6 :minlen 2)
+;;;(:type string :maxlen 6 :minlen 2)
+;;;(:type string :maxlen 6 :minlen 2))
+;;;as a drop in
+
+
+
+(lisp-unit:define-test test-validation
+  (lisp-unit:assert-true (validate-list-p *test-list1* *test-template1*))
+  (lisp-unit:assert-true (validate-list-p *test-list2* *test-template2*))
+  (lisp-unit:assert-true (validate-list-p *test-list3* *test-template3*))
+  (lisp-unit:assert-true (validate-list-p *test-list4* *test-template4*))
+  (lisp-unit:assert-true (validate-list-p *test-list5* *test-template5*))
+  (lisp-unit:assert-true (validate-list-p *test-list7* *test-template7*))
+  (lisp-unit:assert-false (validate-list-p *test-list6* *test-template6*))
+  (lisp-unit:assert-false (validate-list-p *test-list1* *test-template2*))
+  (lisp-unit:assert-false (validate-list-p *test-list2* *test-template1*)))
+
+
+
+
 
 (defvar *other-symbols* (make-hash-table :test #'eq))
 
@@ -54,22 +128,15 @@ and the template is '((:n= 100)).
 
 (defun handle-minlen (entry minlen)
   (check-type minlen integer)
-  (when (less-than 0 minlen)
+  (when (less-than minlen 0)
     (error "minlen is less than 0"))
-  (greater-than (length entry) minlen))
-
-;; (lisp-unit:define-test test-minlen
-;;   (lisp-unit:assert-true (handle-minlen "abc" 2))
-;;   (lisp-unit:assert-true (handle-minlen "abc" 3))
-;;   (lisp-unit:assert-false (handle-minlen "" 3))
-;;   (lisp-unit:assert-error 'simple-error (handle-minlen 1 1))
-;;   (lisp-unit:assert-error 'simple-error (handle-minlen "1" -1)))
+  (greater-than-or-equal (length entry) minlen))
 
 (defun handle-maxlen (entry maxlen)
   (check-type maxlen integer)
   (unless (greater-than-or-equal maxlen 1)
     (error "maxlen is not 1 or greater"))
-  (greater-than maxlen (length entry)))
+  (greater-than-or-equal maxlen (length entry)))
 
 (defun handle-less-than (entry less-than)
   (check-type less-than number)
@@ -91,8 +158,12 @@ and the template is '((:n= 100)).
   (equalp entry equal))
 
 (defun handle-satisfies (entry func)
-  (check-type func function)
-  (funcall func entry))
+  (check-type func (or function list))
+  (typecase func
+    (list (some (lambda (func)
+                  (funcall func entry))
+                func))
+    (function (funcall func entry))))
 
 (defun handle-between (entry between-list)
   (check-type entry number)
@@ -138,6 +209,41 @@ and the template is '((:n= 100)).
                (call-right-fun-from-sym sym arg entry))
              template-entry))
 
+(defun nested-list-length (list)
+  "recurses through list and returns how many elements there are in the nested list"
+  (check-type list list)
+  (let ((n 0))
+    (labels ((rec (list)
+               (cond ((null list)
+                      nil)
+                     ((atom list)
+                      (incf n))
+                     ((listp list)
+                      (progn (rec (first list))
+                             (rec (rest list)))))))
+      (rec list))
+    n))
+
+(defun template-nested-length (list)
+  "counts how many 'valid' lists are contained within list. Checking if a list is valid is done
+by assuming that the first element is a keyword. This means that no keywords can occupy the first
+element of a list being passed as args to a function"
+  (check-type list list)
+  (let ((n 0))
+    (labels ((rec (list)
+               (cond ((null list)
+                      nil)
+                     ((listp list)
+                      (progn
+                        (if (and (listp (first list)) (keywordp (first (first list))))
+                            ;;attemping to ignore lists that are args to functions. don't use
+                            ;;keywords as args to funcs
+                            (incf n))
+                        (rec (first list))
+                        (rec (rest list)))))))
+      (rec list))
+    n))
+
 (defun validate-list-p (list template)
   "takes in a list that you want to validate, and a template, the template is a list of lists,
 each list contains keywords and their values (a list of the keywords is in *valid-syms*). Each list
@@ -150,11 +256,9 @@ checked against the template then this func returns nil. another example list an
 found in *test-list2* and *test-template2* respectively"
   (check-type list list)
   (check-type template list)
-  (if (/= (length list)(length template))
+  (if (/= (template-nested-length template)(nested-list-length list))
       nil
       (labels ((rec (list template acc)
-                 ;; (format t "~&entry: ~A~%"list)
-                 ;; (format t "~&template ~A~%" template)
                  (cond ((or (null list)
                             (null template))
                         nil)
@@ -163,15 +267,4 @@ found in *test-list2* and *test-template2* respectively"
                                 (rec (rest list) (rest template) acc)))
                        (t (process-template-entry template list)))))
         (not (some #'null (rec list template '()))))))
-
-
-
-
-
-
-
-
-
-
-
 
