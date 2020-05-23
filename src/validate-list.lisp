@@ -57,12 +57,12 @@
          :unknown-keyword-message message))
 
 (defun repeat-test (length validation-list)
-  "Returns a list of length LENGTH which simply repeats validation-list"
+  "Returns a list of length LENGTH which simply repeats VALIDATION-LIST"
   (loop :for x :from 0 :below length
         :collect validation-list))
 
 (defun repeat-pattern (length pattern-list)
-  "Given a length and a pattern-list this will return a list of length with pattern-list 
+  "Given a length and a list this will return a list of LENGTH with PATTERN-LIST 
 repeated LENGTH times"
   (loop :for x :from 0 :below length
         :appending pattern-list))
