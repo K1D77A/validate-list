@@ -48,16 +48,20 @@ Here are the other keys and what they do (each key takes exactly 1 argument):
 * :satisfies - checks if the function in arg returns t when called with the list entry
 
 ## defining your own symbols
-If you find you need more functionalisty you can define your own symbols with the function ``add-new-symbol``
+If you find you need more functionality you can define your own symbols with the function ``add-new-symbol``
+<br>
 here is the doctsring:<br>
   "Takes in a symbol and associates the symbol with the function. the function must accept two
 arguments, the first an entry ie a value in a list wanting to be validated and the second an object
 see any of the definitions of handle-* to get an idea what your lambda should look like. Here is 
-an example (add-new-symbol :n= 
-               (lambda (entry arg) 
-                       (check-type entry integer)
-                       (check-type arg integer)
-                       (= arg entry)))
+an example <br>
+```lisp
+(add-new-symbol :n= 
+                (lambda (entry arg) 
+                  (check-type entry integer)
+                  (check-type arg integer)
+                  (= arg entry)))
+                  ```
 Now with the new symbol :n= defined this can be used in a template like so where list is '(100)
 and the template is '((:n= 100)). 
 "
