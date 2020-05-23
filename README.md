@@ -5,7 +5,7 @@ The idea came because when you parse json from an untrusted source you don't kno
 has been sent, so the idea is that once parsed you can use a template to check if the parsed data 
 (now a list) conforms to what you want. There is only one function and that is 
 ``validate-list-p`` Which takes in two arguments, the list you wish to validate and a template.
-Here is the docstring: 
+Here is the docstring:<br> 
 ``
 "takes in a list that you want to validate, and a template, the template is a list of lists,
 each list contains keywords and their values (a list of the keywords is in *valid-syms*). Each list
