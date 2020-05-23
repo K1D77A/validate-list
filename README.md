@@ -58,8 +58,8 @@ an example <br>
 ```lisp
 (add-new-symbol :n= 
                 (lambda (entry arg) 
-                  (check-type entry integer)
-                  (check-type arg integer)
+                  (check-type entry number)
+                  (check-type arg number)
                   (= arg entry)))
                   ```
 Now with the new symbol :n= defined this can be used in a template like so where list is '(100)

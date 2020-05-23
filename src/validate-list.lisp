@@ -35,8 +35,8 @@ arguments, the first an entry ie a value in a list wanting to be validated and t
 see any of the definitions of handle-* to get an idea what your lambda should look like. Here is 
 an example (add-new-symbol :n= 
                (lambda (entry arg) 
-                       (check-type entry integer)
-                       (check-type arg integer)
+                       (check-type entry number)
+                       (check-type arg number)
                        (= arg entry)))
 Now with the new symbol :n= defined this can be used in a template like so where list is '(100)
 and the template is '((:n= 100)). 
