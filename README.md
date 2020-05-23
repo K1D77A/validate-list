@@ -24,6 +24,7 @@ Here is the docstring:<br>
 an argument as this will cause undefined behaviour*
 <br>
 ## Example templates to validate example lists
+<br>
 These are two example lists and their templates: <br>
 
 ```lisp
