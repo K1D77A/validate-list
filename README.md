@@ -8,8 +8,10 @@ has been sent, so the idea is that once parsed you can use a template to check i
 Here is the docstring:<br> 
 ``
 "takes in a list that you want to validate, and a template, the template is a list of lists,
-each list contains keywords and their values (a list of the keywords is in *valid-syms*). Each list
-within the template represents 1 element in the list and is a 'description' of its contents. 
+each list contains keywords and their values (a list of the keywords is in *valid-syms*).<br>
+Each list
+within the template represents 1 element in the list and is a 'description' of its contents.
+<br>
 For example given the template '((:equal \"key\") (:type string :maxlen 40)) this could be used
 to validate the list '(\"key\" \"abcdeegadfgfsdf\") because as the template says, the first item in 
 list is \"key\" and the second according to the template should be of type 'string and no longer
@@ -111,9 +113,9 @@ Here are the other keys and what they do (each key takes exactly 1 argument):
 If you find you need more functionality you can define your own symbols with the function ``add-new-symbol``
 <br>
 here is the doctsring:<br>
-  "Takes in a symbol and associates the symbol with the function. the function must accept two
+  "Takes in a symbol and associates the symbol with the function. <br>the function must accept two
 arguments, the first an entry ie a value in a list wanting to be validated and the second an object
-see any of the definitions of handle-* to get an idea what your lambda should look like. Here is 
+see any of the definitions of handle-* to get an idea what your lambda should look like.<br> Here is 
 an example <br>
 ```lisp
 (add-new-symbol :n= 
