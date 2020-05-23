@@ -60,7 +60,7 @@ These are two example lists and their templates:
                                                        (:type number :between (0 100)))))
                                  ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
                                  
-->
+*test-template8* ->
 ((:EQUAL "year") (:TYPE INTEGER :OR (96 97 98))
  ((:OR ("cookie" "country" "keyvals"))
   ((:TYPE STRING :MAXLEN 6 :MINLEN 2) (:TYPE NUMBER :BETWEEN (0 100))
