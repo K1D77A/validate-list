@@ -27,6 +27,14 @@ These are two example lists and their templates:
 (defparameter *test-template2* '((:equal "year")(:type integer :between (2100 1900))
                                  ((:or ("cookie" "country"))(:type string :maxlen 50))))
 ```
+
+```lisp
+(validate-list *test-list2* *test-template2*)
+-> t
+(validate-list *test-list2* *test-template1*)
+-> nil
+```
+
 Here are the other keys and what they do (each key takes exactly 1 argument):
 
 * :equal - checks if list entry is equalp to arg.
