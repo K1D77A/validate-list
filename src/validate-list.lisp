@@ -202,13 +202,17 @@ repeated LENGTH times"
         :collect (funcall func key val)))
 
 (defun keyword->function (keyword)
+  "Given a keyword in KEYWORD, this function looks for the associated function in *functions* if found
+then the function is returned, otherwise a UNKNOWN-KEYWORD condition is signalled."
   (check-type keyword keyword)
   (let ((func (gethash keyword *functions*)))
     (if func
         func
         (signal-unknown-keyword keyword
                                 (format nil
-                                        "There is no function associated with the keyword ~A. Please define one with (define-key ..) or remove ~A from your template"
+                                        "There is no function associated with the keyword ~A.
+ Please define one with (define-key ..) 
+or remove ~A from your template"
                                         keyword keyword)))))
 
 (defun process-template-entry (template-entry entry)
