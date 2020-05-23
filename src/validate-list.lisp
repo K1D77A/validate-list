@@ -22,7 +22,7 @@
 
 (defparameter *test-list2*  '("year" 2020 ("country" "USA")))
 (defparameter *test-template2* '((:equal "year")(:type integer :between (2100 1900))
-                                 ((:equal "country")(:type string :maxlen 50))))
+                                 ((:or ("cookie" "country"))(:type string :maxlen 50))))
 
 (defun handle-type (entry type)
   (check-type type symbol)
@@ -101,7 +101,7 @@
     (:less-than    (handle-less-than entry sym-arg))
     (:greater-than (handle-greater-than entry sym-arg))
     (:or           (handle-or entry sym-arg))
-    (:satisfies    (handle-or entry sym-arg))
+    (:satisfies    (handle-satisfies entry sym-arg))
     (:otherwise    (error "invalid keyword"))));;change to a condition
 
 (defun process-template-entry (template-entry entry)
