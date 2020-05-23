@@ -8,7 +8,7 @@
            #:repeat-test
            #:unknown-keyword
            #:unknown-keyword-message
-           #:unknown-keyword-sym)
+           #:unknown-keyword-keyword)
   (:shadowing-import-from
    #:arithmetic-operators-as-words
    #:less-than
