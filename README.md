@@ -17,7 +17,10 @@ than 40 characters long, which it is not, so this is valid and will return t, if
 checked against the template then this func returns nil. another example list and template can be 
 found in *test-list2* and *test-template2* respectively"
 ``
-
+<br>
+*note it is important that you do not use keywords as the first entry in a list that is passed as 
+an argument as this will cause undefined behaviour*
+<br>
 These are two example lists and their templates: 
 ```lisp
 (defparameter *test-list1* '("key" "abcdeegadfgfsdf"))
