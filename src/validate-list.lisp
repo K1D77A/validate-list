@@ -16,9 +16,7 @@
 ;;;;  ((:equal "country")(:type string :maxlen 50))
 
 
-(defparameter *current-keys* '(:equal :type :between :minlen
-                               :maxlen :less-than :greater-than
-                               :or :satisfies))
+(defvar *current-keys* '())
 
 (defvar *functions* (make-hash-table :test #'eq))
 
@@ -84,7 +82,8 @@ repeated LENGTH times"
   (check-type key keyword)
   (check-type func function)
   (setf (gethash key *functions*)
-        func))
+        func)
+  (push key *current-keys*))
 
 (define-key :type
     (lambda (entry type)

@@ -3,7 +3,7 @@
 (defpackage #:validate-list
   (:use #:cl)
   (:export #:validate-list-p
-           #:add-new-symbol
+           #:define-key
            #:repeat-pattern
            #:repeat-test
            #:unknown-keyword
