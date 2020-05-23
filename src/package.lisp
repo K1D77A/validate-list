@@ -5,7 +5,10 @@
   (:export #:validate-list-p
            #:add-new-symbol
            #:repeat-pattern
-           #:repeat-test)
+           #:repeat-test
+           #:unknown-keyword
+           #:unknown-keyword-message
+           #:unknown-keyword-sym)
   (:shadowing-import-from
    #:arithmetic-operators-as-words
    #:less-than

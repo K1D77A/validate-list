@@ -115,8 +115,15 @@ an example <br>
 Now with the new symbol :n= defined this can be used in a template like so where list is '(100)
 and the template is '((:n= 100)). 
 "
-
-
+## other
+The condition ``unknown-keyword`` is signalled when you put an unknown keyword in your template.
+<br>
+It has two accessors
+* unknown-keyword-keyword - returns the keyword you tried to use.
+* unknown-keyword-message - a description of what went wrong.
+<br>
+There is another condition that is signalled internally ``failed-to-validate`` if this condition is
+signalled when using the normal library functions this is a bug and please report it. 
 ## License
 
 MIT
