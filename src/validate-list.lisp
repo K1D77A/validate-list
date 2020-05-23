@@ -16,9 +16,11 @@
 ;;;;  ((:equal "country")(:type string :maxlen 50))
 
 
-(defparameter *valid-syms* '(:equal :type :between :minlen
-                             :maxlen :less-than :greater-than
-                             :or :satisfies))
+(defparameter *current-keys* '(:equal :type :between :minlen
+                               :maxlen :less-than :greater-than
+                               :or :satisfies))
+
+(defvar *functions* (make-hash-table :test #'eq))
 
 (defparameter *test-list1* '("key" "abcdeegadfgfsdf"))
 (defparameter *test-template1* '((:equal "key") (:type string :maxlen 40)))
@@ -70,13 +72,10 @@
                                                        (:type number :between (0 100)))))
                                  ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
 
-(defvar *other-symbols* (make-hash-table :test #'eq))
-
-
 (define-condition failed-to-validate (error)
-  ((sym
-    :initarg :sym 
-    :accessor sym)
+  ((key
+    :initarg :key 
+    :accessor key)
    (arg
     :initarg :arg
     :accessor arg)
@@ -97,10 +96,9 @@
     :accessor unknown-keyword-message
     :documentation "Message indicating what when wrong")))
 
-
-(defun signal-failed-to-validate (sym arg entry message)
+(defun signal-failed-to-validate (keyword arg entry message)
   (error 'failed-to-validate
-         :sym sym
+         :key keyword
          :arg arg
          :entry entry
          :message message))
@@ -111,123 +109,88 @@
          :unknown-keyword-message message))
 
 (defun repeat-test (length validation-list)
-  "returns a list of length 'length' which simply repeats validation-list"
+  "Returns a list of length LENGTH which simply repeats validation-list"
   (loop :for x :from 0 :below length
         :collect validation-list))
 
 (defun repeat-pattern (length pattern-list)
-  "given a length and a pattern-list will return a list of length with pattern-list repeated length
-times"
+  "Given a length and a pattern-list this will return a list of length with pattern-list 
+repeated LENGTH times"
   (loop :for x :from 0 :below length
         :appending pattern-list))
 
-
-
-;;;for example if you have a list containing 3 elements and you just need to know they are strings
-;;;then you could just generate the code to do it
-;;;our list is ("USA" "UK" "Poland") this is 3 strings maxlen 6 and minlen 2 so we could just generate
-;;;((:type string :maxlen 6 :minlen 2)
-;;;(:type string :maxlen 6 :minlen 2)
-;;;(:type string :maxlen 6 :minlen 2))
-;;;as a drop in
-
-
-
-(lisp-unit:define-test test-validation
-  (lisp-unit:assert-true (validate-list-p *test-list1* *test-template1*))
-  (lisp-unit:assert-true (validate-list-p *test-list2* *test-template2*))
-  (lisp-unit:assert-true (validate-list-p *test-list3* *test-template3*))
-  (lisp-unit:assert-true (validate-list-p *test-list4* *test-template4*))
-  (lisp-unit:assert-true (validate-list-p *test-list5* *test-template5*))
-  (lisp-unit:assert-true (validate-list-p *test-list7* *test-template7*))
-  (lisp-unit:assert-true (validate-list-p *test-list8* *test-template8*))
-  (lisp-unit:assert-false (validate-list-p *test-list6* *test-template6*))
-  (lisp-unit:assert-false (validate-list-p *test-list1* *test-template2*))
-  (lisp-unit:assert-false (validate-list-p *test-list2* *test-template1*))
-  (list-unit:assert-false (validate-list-p *test-list9* *test-template9*)))
-
-
-(defun add-new-symbol (symbol function)
-  "Takes in a symbol and associates the symbol with the function. the function must accept two
-arguments, the first an entry ie a value in a list wanting to be validated and the second an object
-see any of the definitions of handle-* to get an idea what your lambda should look like. Here is 
-an example (add-new-symbol :n= 
-               (lambda (entry arg) 
-                       (check-type entry number)
-                       (check-type arg number)
-                       (= arg entry)))
-Now with the new symbol :n= defined this can be used in a template like so where list is '(100)
-and the template is '((:n= 100)). 
-
+(defun define-key (key func)
+  "Takes in a keywrod and associates the keyword with the function. The function must accept two
+  arguments, the first an entry ie a value in a list wanting to be validated and the second an object
+  see any of the other uses of DEFINE-KEY in src/validate-list.lisp to get an idea what your lambda should look like. Here is 
+  an example (define-key :n= 
+                  (lambda (entry arg) 
+                      (check-type entry number)
+                      (check-type arg number)
+                      (= entry arg)))
+  Now with the new symbol :n= defined this can be used in a template like so where list is '(100)
+  and the template is '((:n= 100)). 
 "
-  (check-type symbol symbol)
-  (check-type function function)
-  (setf (gethash symbol *other-symbols*)
-        function))
+  (check-type key keyword)
+  (check-type func function)
+  (setf (gethash key *functions*)
+        func))
 
+(define-key :type
+    (lambda (entry type)
+      (check-type type symbol)
+      (typep entry type)))
 
-(defun handle-type (entry type)
-  (check-type type symbol)
-  (typep entry type))
+(define-key :minlen
+    (lambda (entry minlen)
+      (check-type minlen (integer 0))
+      (greater-than-or-equal (length entry) minlen)))
 
-(defun handle-minlen (entry minlen)
-  (check-type minlen integer)
-  (when (less-than minlen 0)
-    (error "minlen is less than 0"))
-  (greater-than-or-equal (length entry) minlen))
+(define-key :maxlen
+    (lambda (entry maxlen)
+      (check-type maxlen (integer 1))
+      (greater-than-or-equal maxlen (length entry))))
 
-(defun handle-maxlen (entry maxlen)
-  (check-type maxlen integer)
-  (unless (greater-than-or-equal maxlen 1)
-    (error "maxlen is not 1 or greater"))
-  (greater-than-or-equal maxlen (length entry)))
+(define-key :less-than
+    (lambda (entry less-than)
+      (check-type less-than number)
+      (check-type entry number)
+      (less-than entry less-than)))
 
-(defun handle-less-than (entry less-than)
-  (check-type less-than number)
-  (check-type entry number)
-  (less-than entry less-than))
+(define-key :greater-than
+    (lambda (entry greater-than)
+      (check-type greater-than number)
+      (check-type entry number)
+      (greater-than entry greater-than)))
 
-(defun handle-greater-than (entry greater-than)
-  (check-type greater-than number)
-  (check-type entry number)
-  (greater-than entry greater-than))
+(define-key :or
+    (lambda (entry list-of-potentials)
+      (find entry list-of-potentials :test #'equalp)))
 
-(defun handle-or (entry list-of-potentials)
-  (check-type list-of-potentials list)
-  (some (lambda (pot)
-          (equalp pot entry))
-        list-of-potentials))
+(define-key :equal
+    (lambda (entry equal)
+      (equalp entry equal)))
 
-(defun handle-equal (entry equal)
-  (equalp entry equal))
+(define-key :satisfies
+    (lambda (entry func)
+      (check-type func (or function list))
+      (typecase func
+        (list (some (lambda (func)
+                      (funcall func entry))
+                    func))
+        (function (funcall func entry)))))
 
-(defun handle-satisfies (entry func)
-  (check-type func (or function list))
-  (typecase func
-    (list (some (lambda (func)
-                  (funcall func entry))
-                func))
-    (function (funcall func entry))))
+(define-key :between
+    (lambda (entry between-list)
+      (check-type entry number)
+      (check-type between-list list)
+      (let ((max (reduce #'max between-list))
+            (min (reduce #'min between-list)))
+        (greater-than max entry min))))
 
-(defun handle-between (entry between-list)
-  (check-type entry number)
-  (check-type between-list list)
-  (let ((max (reduce #'max between-list))
-        (min (reduce #'min between-list)))
-    (greater-than max entry min)))
-
-(defun handle-other-sym (entry sym sym-arg)
-  (check-type sym symbol)
-  (let ((fun (gethash sym *other-symbols*)))
-    (if fun
-        (funcall fun entry sym-arg)
-        (signal-unknown-keyword sym
-                                (format nil "There is no function in *other-symbols* 
-associated with ~A. Please define this with `add-new-symbol` or remove ~A from your template"
-                                        sym sym)))))
-
+;;;map-list is not efficient should just traverse list once
 (defun map-plist (func plist)
-  "maps a plist and calls a func that accepts two arguments. returns a list of
+  "Maps a PLIST and calls FUNC that accepts two arguments. returns a list of
   funcall-result"
   (check-type plist list)
   (check-type func function)
@@ -238,34 +201,28 @@ associated with ~A. Please define this with `add-new-symbol` or remove ~A from y
         :for val := (nth y plist)
         :collect (funcall func key val)))
 
-(defun call-right-fun-from-sym (sym sym-arg entry)
-  (check-type sym symbol)
-  (case sym
-    (:equal        (handle-equal entry sym-arg))
-    (:type         (handle-type entry sym-arg))
-    (:between      (handle-between entry sym-arg))
-    (:minlen       (handle-minlen entry sym-arg))
-    (:maxlen       (handle-maxlen entry sym-arg))
-    (:less-than    (handle-less-than entry sym-arg))
-    (:greater-than (handle-greater-than entry sym-arg))
-    (:or           (handle-or entry sym-arg))
-    (:satisfies    (handle-satisfies entry sym-arg))
-    (:otherwise    (handle-other-sym entry sym sym-arg))))
-;;;should add a way to add new symbols which is pretty trivial, just a hashtable which associates
-;;;the symbols with a lambda that takes 1 arg, if call-right-fun-from-sym fails to find it
-;;;immediately then it can look in the hashtable and find the func and call it. ez
+(defun keyword->function (keyword)
+  (check-type keyword keyword)
+  (let ((func (gethash keyword *functions*)))
+    (if func
+        func
+        (signal-unknown-keyword keyword
+                                (format nil
+                                        "There is no function associated with the keyword ~A. Please define one with (define-key ..) or remove ~A from your template"
+                                        keyword keyword)))))
 
 (defun process-template-entry (template-entry entry)
-  (map-plist (lambda (sym arg)
-               (if (not (call-right-fun-from-sym sym arg entry))
-                   (signal-failed-to-validate sym arg entry
-                                              (format nil "failed to validate '(~A ~A) with entry ~A"
-                                                      sym arg entry))
+  (map-plist (lambda (keyword arg)
+               (if (not (funcall (keyword->function keyword) entry arg))
+                   (signal-failed-to-validate keyword arg entry
+                                              (format nil
+                                                      "failed to validate '(~A ~A) with entry ~A"
+                                                      keyword arg entry))
                    t))
              template-entry))
 
 (defun nested-list-length (list)
-  "recurses through list and returns how many elements there are in the nested list"
+  "Recurses through LIST and returns how many elements there are in the nested list"
   (check-type list list)
   (let ((n 0))
     (labels ((rec (list)
@@ -280,7 +237,7 @@ associated with ~A. Please define this with `add-new-symbol` or remove ~A from y
     n))
 
 (defun template-nested-length (list)
-  "counts how many 'valid' lists are contained within list. Checking if a list is valid is done
+  "Counts how many 'valid' lists are contained within LIST. Checking if a list is valid is done
 by assuming that the first element is a keyword. This means that no keywords can occupy the first
 element of a list being passed as args to a function"
   (check-type list list)
@@ -291,7 +248,7 @@ element of a list being passed as args to a function"
                      ((listp list)
                       (progn
                         (if (and (listp (first list)) (keywordp (first (first list))))
-                            ;;attemping to ignore lists that are args to functions. don't use
+                            ;;attempting to ignore lists that are args to functions. don't use
                             ;;keywords as args to funcs
                             (incf n))
                         (rec (first list))
@@ -300,15 +257,14 @@ element of a list being passed as args to a function"
     n))
 
 (defun validate-list-p (list template)
-  "takes in a list that you want to validate, and a template, the template is a list of lists,
-each list contains keywords and their values (a list of the keywords is in *valid-syms*). Each list
-within the template represents 1 element in the list and is a 'description' of its contents. 
+  "Takes in a LIST that you want to validate, and a TEMPLATE, the TEMPLATE is a list of lists,
+each list contains keywords and their values (a list of the keywords is in *current-keys*). Each list
+within the template represents 1 element in the LIST and is a 'description' of its contents. 
 For example given the template '((:equal \"key\") (:type string :maxlen 40)) this could be used
 to validate the list '(\"key\" \"abcdeegadfgfsdf\") because as the template says, the first item in 
 list is \"key\" and the second according to the template should be of type 'string and no longer
 than 40 characters long, which it is not, so this is valid and will return t, if a list fails when
-checked against the template then this func returns nil. another example list and template can be 
-found in *test-list2* and *test-template2* respectively"
+checked against the template then this func returns nil. For a list of examples see src/validate-list.lisp"
   (check-type list list)
   (check-type template list)
   (handler-case 

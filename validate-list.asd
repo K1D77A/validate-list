@@ -11,4 +11,5 @@ a template"
   :depends-on (:arithmetic-operators-as-words
                :lisp-unit)
   :components ((:file "package")
-               (:file "validate-list")))
+               (:file "validate-list")
+               (:file "tests")))
