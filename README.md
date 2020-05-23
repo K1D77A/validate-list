@@ -23,7 +23,8 @@ Here is the docstring:<br>
 *note it is important that you do not use keywords as the first entry in a list that is passed as 
 an argument as this will cause undefined behaviour*
 <br>
-These are two example lists and their templates: 
+These are two example lists and their templates: <br>
+
 ```lisp
 (defparameter *test-list1* '("key" "abcdeegadfgfsdf"))
 (defparameter *test-template1* '((:equal "key") (:type string :maxlen 40)))
