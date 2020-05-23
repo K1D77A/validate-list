@@ -97,7 +97,7 @@ Here are the other keys and what they do (each key takes exactly 1 argument):
 * :or - checks if list entry is equalp to any items within the list arg ie '("hello" "help" "house")
 * :satisfies - takes a function or list of functions in arg and calls the functions on entry if any returns t, this returns t. 
 
-## defining your own symbols
+## Defining your own symbols
 If you find you need more functionality you can define your own symbols with the function ``add-new-symbol``
 <br>
 here is the doctsring:<br>
@@ -115,7 +115,7 @@ an example <br>
 Now with the new symbol :n= defined this can be used in a template like so where list is '(100)
 and the template is '((:n= 100)). 
 "
-## other
+## Other
 The condition ``unknown-keyword`` is signalled when you put an unknown keyword in your template.
 <br>
 It has two accessors
@@ -124,6 +124,7 @@ It has two accessors
 <br>
 There is another condition that is signalled internally ``failed-to-validate`` if this condition is
 signalled when using the normal library functions this is a bug and please report it. 
+
 ## License
 
 MIT
