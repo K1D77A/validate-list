@@ -47,7 +47,7 @@ Here are the other keys and what they do (each key takes exactly 1 argument):
 * :or - checks if list entry is equalp to any items within the list arg ie '("hello" "help" "house")
 * :satisfies - checks if the function in arg returns t when called with the list entry
 
-**defining your own symbols
+## defining your own symbols
 If you find you need more functionalisty you can define your own symbols with the function ``add-new-symbol``
 here is the doctsring:<br>
   "Takes in a symbol and associates the symbol with the function. the function must accept two
