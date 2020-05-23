@@ -59,12 +59,22 @@ These are two example lists and their templates:
                                   ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
                                                        (:type number :between (0 100)))))
                                  ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
+                                 
+->
+((:EQUAL "year") (:TYPE INTEGER :OR (96 97 98))
+ ((:OR ("cookie" "country" "keyvals"))
+  ((:TYPE STRING :MAXLEN 6 :MINLEN 2) (:TYPE NUMBER :BETWEEN (0 100))
+   (:TYPE STRING :MAXLEN 6 :MINLEN 2) (:TYPE NUMBER :BETWEEN (0 100))
+   (:TYPE STRING :MAXLEN 6 :MINLEN 2) (:TYPE NUMBER :BETWEEN (0 100))))
+ ((:TYPE NUMBER :SATISFIES (#'EVENP #'ODDP))
+  (:TYPE NUMBER :SATISFIES (#'EVENP #'ODDP))
+  (:TYPE NUMBER :SATISFIES (#'EVENP #'ODDP))))
 ```
 
 ## The helper functions
 There are two helper functions ``repeat-pattern`` and ``repeat-test``. <br>
 The purpose of these functions is to help validate a known length and a known pattern, for example
-if you know that the list is going to be 12 long you don't want to write out (:type string) 10 times
+if you know that the list is going to be 10 elements long you don't want to write out (:type string) 10 times
 so you can instead just use one of these functions to do it for you. 
 * repeat-pattern - takes two arguments, the first how many times to repeat and the second a list of lists which you want repeated eg. 
 ```lisp
