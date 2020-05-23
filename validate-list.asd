@@ -9,7 +9,8 @@ a template"
   :pathname "src"
   :serial t
   :depends-on (:arithmetic-operators-as-words
-               :lisp-unit)
+               :lisp-unit
+               :alexandria)
   :components ((:file "package")
                (:file "validate-list")
                (:file "tests")))

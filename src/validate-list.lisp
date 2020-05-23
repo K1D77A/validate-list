@@ -22,56 +22,6 @@
 
 (defvar *functions* (make-hash-table :test #'eq))
 
-(defparameter *test-list1* '("key" "abcdeegadfgfsdf"))
-(defparameter *test-template1* '((:equal "key") (:type string :maxlen 40)))
-
-(defparameter *test-list2*  '("year" 2020 ("country" "USA")))
-(defparameter *test-template2* '((:equal "year")(:type integer :between (2100 1900))
-                                 ((:or ("cookie" "country"))(:type string :maxlen 50))))
-
-(defparameter *test-list3*  '("year" 98 ("country" ("USA" "UK" "Poland"))))
-(defparameter *test-template3* '((:equal "year")(:type integer :or (96 97 98))
-                                 ((:or ("cookie" "country"))
-                                  ((:equal "USA")(:equal "UK")(:equal "Poland")))))
-
-(defparameter *test-list4*  '("year" 98 ("country" ("USA" "UK" "Poland"))))
-(defparameter *test-template4* `((:equal "year")(:type integer :or (96 97 98))
-                                 ((:or ("cookie" "country"))
-                                  ,(repeat-test 3 '(:type string :maxlen 6 :minlen 2)))))
-
-(defparameter *test-list5*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96))))
-(defparameter *test-template5* `((:equal "year")(:type integer :or (96 97 98))
-                                 ((:or ("cookie" "country" "keyvals"))
-                                  ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
-                                                       (:type number :between (0 100)))))))
-
-(defparameter *test-list6*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96))))
-(defparameter *test-template6* `((:equal "year")(:type integer :or (96 97 98))
-                                 ((:or ("cookie" "country" "keyvals"))
-                                  ,(repeat-pattern 4 '((:type string :maxlen 6 :minlen 2)
-                                                       (:type number :between (0 100)))))))
-;;;^should fail because the end is len 4 instead of len 3
-(defparameter *test-list7*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 4 6)))
-(defparameter *test-template7* `((:equal "year")(:type integer :or (96 97 98))
-                                 ((:or ("cookie" "country" "keyvals"))
-                                  ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
-                                                       (:type number :between (0 100)))))
-                                 ,(repeat-test 3 '(:type number :satisfies #'evenp))))
-
-(defparameter *test-list8*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 5 6)))
-(defparameter *test-template8* `((:equal "year")(:type integer :or (96 97 98))
-                                 ((:or ("cookie" "country" "keyvals"))
-                                  ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
-                                                       (:type number :between (0 100)))))
-                                 ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
-
-(defparameter *test-list9*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 5 6)))
-(defparameter *test-template9* `((:equal "year")(:type integer :or (96 97 98))
-                                 ((:or ("cookie" "country"))
-                                  ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
-                                                       (:type number :between (0 100)))))
-                                 ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
-
 (define-condition failed-to-validate (error)
   ((key
     :initarg :key 
@@ -188,18 +138,14 @@ repeated LENGTH times"
             (min (reduce #'min between-list)))
         (greater-than max entry min))))
 
-;;;map-list is not efficient should just traverse list once
 (defun map-plist (func plist)
   "Maps a PLIST and calls FUNC that accepts two arguments. returns a list of
   funcall-result"
   (check-type plist list)
   (check-type func function)
-  (loop :with len := (length plist)
-        :for x :from 0 :to (1- len) :by 2
-        :for y :from 1 :to  len :by 2
-        :for key := (nth x plist)
-        :for val := (nth y plist)
-        :collect (funcall func key val)))
+  (let ((res))
+    (alexandria:doplist (key val plist res)
+                        (nconc res (list (funcall func key val))))))
 
 (defun keyword->function (keyword)
   "Given a keyword in KEYWORD, this function looks for the associated function in *functions* if found
@@ -268,7 +214,7 @@ For example given the template '((:equal \"key\") (:type string :maxlen 40)) thi
 to validate the list '(\"key\" \"abcdeegadfgfsdf\") because as the template says, the first item in 
 list is \"key\" and the second according to the template should be of type 'string and no longer
 than 40 characters long, which it is not, so this is valid and will return t, if a list fails when
-checked against the template then this func returns nil. For a list of examples see src/validate-list.lisp"
+checked against the template then this func returns nil. For a list of examples see src/tests.lisp"
   (check-type list list)
   (check-type template list)
   (handler-case 
