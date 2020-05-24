@@ -10,6 +10,7 @@
                                           ((:TYPE NUMBER :SATISFIES (#'EVENP #'ODDP))
                                            (:TYPE NUMBER :SATISFIES (#'EVENP #'ODDP))
                                            (:TYPE NUMBER :SATISFIES (#'EVENP #'ODDP)))))
+
 (defparameter *test1* '("year"))
 (defparameter *temp1* '((:type string :equal "year")))
 (defparameter *test1-compiled* (lambda (list)
@@ -30,86 +31,55 @@
 
 
 
-(defparameter *test2-compiled*
-  `(lambda (list)
-     (handler-case 
-         (let ((first (first list)))
-           ,(compile-template-entry (first *temp2*) 'first)
-           (let ((second (second list)))
-             ,(compile-template-entry (second *temp2*) 'second)))
-       (failed-to-validate () nil))))
-
-(defun pop-through-all (list)
-  (let ((temp list))
-    (labels ((rec (list)
-               (let ((popped (pop list)))
-                 (cond ((null popped)
-                        nil)
-                       ((listp popped)
-                        (cons (rec popped)
-                              (rec list)))
-                       (t 
-                        (rec list))))))
-      (rec temp))))
-
-(defun describe-template-structure (template)
-  (let ((res))
-    (labels ((tmp (list)
-               (mapcar (lambda (entry)
-                         (if (listp (first entry))
-                             (progn (push 'list res)
-                                    (tmp entry))
-                             (push 'pop res)))
-                       list)
-               (push 'end res)))
-      (tmp template))
-    (reverse res)))
-
-(defparameter *t* '(progn
-                    (let ((first (pop list)))
-                      (validate))
-                    (let ((second (pop list)))
-                      (validate))
-                    (let ((nlist (pop list)))
-                      (let (first (pop nlist))
-                        (validate))
-                      (let (first (pop nlist))
-                        (validate))
-                      (let ((nlist2 (pop nlist)))
-                        (let ((first (pop nlist2)))
-                          (validate))))
-                    (let ((first (pop list))))))
+;;the compile could be a loop that steps through both at the same time
+;;calling the correct function on the other list
 
 (defun compile-template (template)
   `(lambda (list)
-     (handler-case 
-         ,(labels ((rec (list acc)
-                     (format t "list: ~A~%" list)
-                     (cond ((null list)
-                            acc)
-                           
-                           ((and (listp (first list))
-                                 (keywordp (first (first list))))
-                            (let ((tmp (gensym)))
-                              (rec (rest list) `(let ((,tmp (pop list)))
-                                                  ,(compile-template-entry
-                                                    (first list) tmp)
-                                                  ,acc))))
-                           ((listp (first (first list)))
-                            `(let ((x (pop list)))
-                               ,(rec (first list) acc)))
-                           ((listp list)
-                            (rec (first list) acc)
-                            (rec (rest list) acc)))))
-            
-            (rec template nil))
+     (handler-case
+         (let ((temp-as-funs ',(process-template-funs template)))
+           (labels ((func (lst lst1)
+                      (format t "~&lst: ~A~%~&lst1: ~A~%" lst lst1)
+                      (mapcar (lambda (ele1 ele2)
+                                (if (and (not (functionp (first ele1)))
+                                         (listp ele2))
+                                    (func  ele1 ele2)
+                                    ;;  (when (listp (first ele1))
+                                    (mapcar (lambda (fun-and-arg)
+                                              (let ((fun (fun fun-and-arg))
+                                                    (arg (argument fun-and-arg)))
+                                                (call-fun-check-true fun ele2 arg)))
+                                            ele1)))
+                              lst lst1)))
+             (func temp-as-funs list))
+           t)
        (failed-to-validate () nil))))
 
+(defun compile-template-entry (template-entry)
+  `,(map-plist (lambda (key val)
+                 (list (keyword->function key) val))
+               template-entry))
 
-(defun compile-template-entry (template-entry var)
-  `(progn ,@(map-plist (lambda (key val)
-                         `(call-fun-check-true ,(keyword->function key) ,var ',val))
-                       template-entry)))
+(defun fun (template-fun)
+  (let ((f (first template-fun)))
+    (if (functionp f)
+        f
+        (error "not a template function"))))
+
+(defun argument (template-fun)
+  (second template-fun))
+
+(defun process-template-funs (template)
+  (labels ((rec (list acc)
+             (cond ((null list)
+                    nil)
+                   ((listp list)
+                    (if (and (listp (first list)) (keywordp (first (first list))))
+                        (cons (compile-template-entry (first list))
+                              (rec (rest list) acc))                        
+                        (cons (rec (first list) acc)
+                              (rec (rest list) acc)))))))
+    (rec template nil)))
 
 (defun call-fun-check-true (fun arg1 arg2)
   (if (funcall fun arg1 arg2)
