@@ -209,7 +209,7 @@ element of a list being passed as args to a function"
 
 (defun validate-list-p (list template)
   "Takes in a LIST that you want to validate, and a TEMPLATE, the TEMPLATE is a list of lists,
-each list contains keywords and their values (a full list of keys can be found by calling CURRENT-KEYS). Each list
+each list contains keywords and their values (a full list of keys can be found by calling CURRENT-KEYS), if TEMPLATE is 'invalid' then the condition BAD-TEMPLATE-FORM is signalled. Each list
 within the template represents 1 element in the LIST and is a 'description' of its contents. 
 For example given the template '((:equal \"key\") (:type string :maxlen 40)) this could be used
 to validate the list '(\"key\" \"abcdeegadfgfsdf\") because as the template says, the first item in 
