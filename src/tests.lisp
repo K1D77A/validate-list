@@ -51,6 +51,8 @@
                                                        (:type number :between (0 100)))))
                                  ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
 
+
+
 (lisp-unit:define-test test-validation
   (lisp-unit:assert-true (validate-list-p *test-list1* *test-template1*))
   (lisp-unit:assert-true (validate-list-p *test-list2* *test-template2*))

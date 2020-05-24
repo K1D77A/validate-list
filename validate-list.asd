@@ -13,4 +13,5 @@ a template"
                :alexandria)
   :components ((:file "package")
                (:file "validate-list")
+               (:file "compile-template")
                (:file "tests")))

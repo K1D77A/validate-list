@@ -155,7 +155,7 @@ repeated LENGTH times"
   (check-type func function)
   (let ((res))
     (alexandria:doplist (key val plist res)
-                        (nconc res (list (funcall func key val))))))
+                        (setf res (append res (list (funcall func key val)))))))
 
 (defun keyword->function (keyword)
   "Given a keyword in KEYWORD, this function looks for the associated function in *functions* if found
