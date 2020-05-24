@@ -51,6 +51,20 @@
                                                        (:type number :between (0 100)))))
                                  ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
 
+(defparameter *test-list10*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 5 6)))
+(defparameter *test-template10* `((:equal "year")(:type integer :or (96 97 98))
+                                  ((:or ) ;;broken intentionally
+                                   ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
+                                                        (:type number :between (0 100)))))
+                                  ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
+
+(defparameter *test-list11*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 5 6)))
+(defparameter *test-template11* `((:equal "year")(:type integer :or (96 97 98))
+                                  ((:or 'abc 'def 'hhh) ;;broken intentionally
+                                   ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
+                                                        (:type number :between (0 100)))))
+                                  ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
+
 
 
 (lisp-unit:define-test test-validation
@@ -64,4 +78,8 @@
   (lisp-unit:assert-false (validate-list-p *test-list6* *test-template6*))
   (lisp-unit:assert-false (validate-list-p *test-list1* *test-template2*))
   (lisp-unit:assert-false (validate-list-p *test-list2* *test-template1*))
-  (list-unit:assert-false (validate-list-p *test-list9* *test-template9*)))
+  (lisp-unit:assert-false (validate-list-p *test-list9* *test-template9*))
+  (lisp-unit:assert-error 'bad-template-format (validate-list-p *test-list10* *test-template10*))
+  (lisp-unit:assert-error 'bad-template-format (validate-list-p *test-list11* *test-template11*)))
+
+

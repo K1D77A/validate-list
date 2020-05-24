@@ -12,6 +12,7 @@ a template"
                :lisp-unit
                :alexandria)
   :components ((:file "package")
+               (:file "conditions")
                (:file "validate-list")
                (:file "compile-template")
                (:file "tests")))

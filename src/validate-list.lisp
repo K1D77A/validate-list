@@ -20,42 +20,6 @@
 (defun current-keys ()
   (alexandria:hash-table-keys *functions*))
 
-(define-condition failed-to-validate (error)
-  ((key
-    :initarg :key 
-    :accessor key)
-   (arg
-    :initarg :arg
-    :accessor arg)
-   (entry
-    :initarg :entry
-    :accessor entry)
-   (message
-    :initarg :message
-    :accessor :message
-    :documentation "Message indicating what when wrong")))
-
-(define-condition unknown-keyword (error)
-  ((keyword
-    :initarg :unknown-keyword-keyword 
-    :accessor unknown-keyword-keyword)
-   (message
-    :initarg :unknown-keyword-message
-    :accessor unknown-keyword-message
-    :documentation "Message indicating what when wrong")))
-
-(defun signal-failed-to-validate (keyword arg entry message)
-  (error 'failed-to-validate
-         :key keyword
-         :arg arg
-         :entry entry
-         :message message))
-
-(defun signal-unknown-keyword (keyword message)
-  (error 'unknown-keyword
-         :unknown-keyword-keyword keyword
-         :unknown-keyword-message message))
-
 (defun repeat-test (length validation-list)
   "Returns a list of length LENGTH which simply repeats VALIDATION-LIST"
   (loop :for x :from 0 :below length
@@ -155,7 +119,8 @@ repeated LENGTH times"
   (check-type func function)
   (let ((res))
     (alexandria:doplist (key val plist res)
-                        (setf res (append res (list (funcall func key val)))))))
+                        (check-type key keyword)
+      (setf res (append res (list (funcall func key val)))))))
 
 (defun keyword->function (keyword)
   "Given a keyword in KEYWORD, this function looks for the associated function in *functions* if found
@@ -196,6 +161,32 @@ or remove ~A from your template"
       (rec list))
     n))
 
+(defun is-valid-template (template)
+  "Takes in a TEMPLATE and attempts to make sure it has a valid structure. If it does not then signals
+condition BAD-TEMPLATE-FORMAT"
+  (check-type template list)
+  (handler-case
+      (labels ((rec (list)
+                 (cond ((null list)
+                        nil)
+                       ((listp list)
+                        (progn
+                          (if (and (listp (first list)) (keywordp (first (first list))))
+                              (map-plist (lambda (key val)
+                                           (declare (ignore key val))
+                                           (values))
+                                         (first list)))
+                          (rec (first list))
+                          (rec (rest list)))))))
+        (rec template)
+        t)
+    (SIMPLE-TYPE-ERROR (c)
+      (signal-bad-template-format
+       template (format nil "The keys within TEMPLATE plist are not all keywords.") c))
+    (SIMPLE-ERROR (c)
+      (signal-bad-template-format
+       template (format nil "TEMPLATE provided contains invalid plists.") c))))
+
 (defun template-nested-length (list)
   "Counts how many 'valid' lists are contained within LIST. Checking if a list is valid is done
 by assuming that the first element is a keyword. This means that no keywords can occupy the first
@@ -227,19 +218,21 @@ than 40 characters long, which it is not, so this is valid and will return t, if
 checked against the template then this func returns nil. For a list of examples see src/tests.lisp"
   (check-type list list)
   (check-type template list)
-  (handler-case 
-      (if (/= (template-nested-length template)(nested-list-length list))
-          nil
-          (labels ((rec (list template acc)
-                     (cond ((or (null list)
-                                (null template))
-                            nil)
-                           ((listp (first template))
-                            (append (rec (first list) (first template) acc)
-                                    (rec (rest list) (rest template) acc)))
-                           (t (process-template-entry template list)))))
-            (not (some #'null (rec list template '())))))
-    (failed-to-validate ()
-      nil)))
+  (when (is-valid-template template)
+    (handler-case 
+        (if (/= (template-nested-length template)(nested-list-length list))
+            nil
+            (labels ((rec (list template acc)
+                       (cond ((or (null list)
+                                  (null template))
+                              nil)
+                             ((listp (first template))
+                              (append (rec (first list) (first template) acc)
+                                      (rec (rest list) (rest template) acc)))
+                             (t (process-template-entry template list)))))
+              (rec list template '())
+              t))
+      (failed-to-validate ()
+        nil))))
 
 
