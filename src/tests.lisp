@@ -66,6 +66,12 @@
                                   ,(repeat-test 3 '(:type number :satisfies (#'evenp #'oddp)))))
 
 
+(defun compile-template-and-test (list template)
+  (check-type template list)
+  (check-type list list)
+  (let ((compiled (compile-template template)))
+    (check-type compiled function)
+    (funcall compiled list)))
 
 (lisp-unit:define-test test-validation
   (lisp-unit:assert-true (validate-list-p *test-list1* *test-template1*))
@@ -81,5 +87,23 @@
   (lisp-unit:assert-false (validate-list-p *test-list9* *test-template9*))
   (lisp-unit:assert-error 'bad-template-format (validate-list-p *test-list10* *test-template10*))
   (lisp-unit:assert-error 'bad-template-format (validate-list-p *test-list11* *test-template11*)))
+
+(lisp-unit:define-test test-compiled
+  (lisp-unit:assert-true (compile-template-and-test *test-list1* *test-template1*))
+  (lisp-unit:assert-true (compile-template-and-test *test-list2* *test-template2*))
+  (lisp-unit:assert-true (compile-template-and-test *test-list3* *test-template3*))
+  (lisp-unit:assert-true (compile-template-and-test *test-list4* *test-template4*))
+  (lisp-unit:assert-true (compile-template-and-test *test-list5* *test-template5*))
+  (lisp-unit:assert-true (compile-template-and-test *test-list7* *test-template7*))
+  (lisp-unit:assert-true (compile-template-and-test *test-list8* *test-template8*))
+  (lisp-unit:assert-false (compile-template-and-test *test-list6* *test-template6*))
+  (lisp-unit:assert-false (compile-template-and-test *test-list1* *test-template2*))
+  (lisp-unit:assert-false (compile-template-and-test *test-list2* *test-template1*))
+  (lisp-unit:assert-false (compile-template-and-test *test-list9* *test-template9*))
+  (lisp-unit:assert-error 'bad-template-format
+                          (compile-template-and-test *test-list10* *test-template10*))
+  (lisp-unit:assert-error 'bad-template-format
+                          (compile-template-and-test *test-list11* *test-template11*)))
+  
 
 

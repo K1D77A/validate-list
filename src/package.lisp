@@ -9,7 +9,13 @@
            #:repeat-test
            #:unknown-keyword
            #:unknown-keyword-message
-           #:unknown-keyword-keyword)
+           #:unknown-keyword-keyword
+           #:compile-template
+           #:is-valid-template
+           #:bad-template-format
+           #:bad-template-format-template
+           #:bad-template-format-signaller
+           #:bad-template-format-message)
   (:shadowing-import-from
    #:arithmetic-operators-as-words
    #:less-than

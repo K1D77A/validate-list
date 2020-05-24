@@ -10,40 +10,44 @@ with a list, ie the one you wish to validate. This function will signal a BAD-TE
                (check-type list list)
                (handler-case
                    (let ((temp-as-funs (the list ',(process-template-funs template))))
-                     (labels ((func (lst lst1)
-                                (check-type lst1 list)
-                                (loop :for ele1 list :in lst 
-                                      :for ele2 :in lst1
-                                      :if (and (not (functionp (first ele1)))
-                                               (listp ele2))
-                                        :do  (func ele1 ele2)
-                                      :else
-                                        :do (loop :for fun-and-arg list :in ele1
-                                                  :do (let ((fun (the function (fun fun-and-arg)))
-                                                            (arg (argument fun-and-arg)))
-                                                        (call-fun-check-true fun ele2 arg))))))
-                       (func temp-as-funs list))
-                     t)
+                     (if (/= (the fixnum
+                                  ,(template-nested-length template))
+                             (the fixnum
+                                  (nested-list-length list)))
+                         nil
+                         (labels ((func (lst lst1)
+                                    (check-type lst1 list)
+                                    (loop :for ele1 list :in lst 
+                                          :for ele2 :in lst1
+                                          :if (and (not (functionp (first ele1)))
+                                                   (listp ele2))
+                                            :do  (func ele1 ele2)
+                                          :else
+                                            :do (loop :for fun-and-arg list :in ele1
+                                                      :do (let ((fun (the function (fun fun-and-arg)))
+                                                                (arg (argument fun-and-arg)))
+                                                            (call-fun-check-true fun ele2 arg))))))
+                           (func temp-as-funs list)
+                           t)))
                  (failed-to-validate () nil)))))
       (when see-code
         (format t "~&~S~%" code))
       (compile nil code))))
 
 (defun compile-template-entry (template-entry)
+  (check-type template-entry list)
   `,(map-plist (lambda (key val)
                  (list (keyword->function key) val))
                template-entry))
 
-(defun fun (template-fun)
-  (declare (optimize (speed 3)(safety 1)))
+(defun fun (template-fun)  
   (check-type template-fun list)
   (let ((f (first template-fun)))
     (if (functionp f)
         f
         (error "not a template function"))))
 
-(defun argument (template-fun)
-  (declare (optimize (speed 3)(safety 1)))
+(defun argument (template-fun)  
   (check-type template-fun list)
   (second template-fun))
 
