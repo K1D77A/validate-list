@@ -202,6 +202,11 @@ It has three accessors<br>
 There is another condition that is signalled internally `` failed-to-validate `` if this condition is
 signalled when using the normal library functions this is a bug and please report it. 
 
+## TODO
+
+* Add a way to describe the contents of an element, where that element is a list which is a varying length. Currently 
+we are only able to describe a known number of elements.
+
 ## License
 
 MIT
