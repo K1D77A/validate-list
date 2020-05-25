@@ -200,7 +200,7 @@ It has three accessors<br>
 not always set.
 * bad-template-format-message - a descriptive message stating what happened.
 <br>
-There is another condition that is signalled internally ``failed-to-validate`` if this condition is
+There is another condition that is signalled internally `` failed-to-validate `` if this condition is
 signalled when using the normal library functions this is a bug and please report it. 
 
 ## License
