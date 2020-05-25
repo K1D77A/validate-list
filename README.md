@@ -184,15 +184,17 @@ here is the doctsring:<br>
 > and the template is '((:n= 100)). 
 
 ## Other
+
 The condition ``unknown-keyword`` is signalled when you put an unknown keyword in your template.
 <br>
 It has two accessors
 * unknown-keyword-keyword - returns the keyword you tried to use.
 * unknown-keyword-message - a description of what went wrong.
 <br>
+
 The condition ``bad-template-format`` is signalled when a template is poorly formed.
 <br>
-It has three accessors
+It has three accessors<br>
 * bad-template-format-template - this is the broken template
 * bad-template-format-signaller - the condition that caused ``bad-template-format`` to be signalled
 not always set.
