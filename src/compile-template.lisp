@@ -4,34 +4,38 @@
   "Takes in a valid TEMPLATE and returns a compiled 1 argument function. This function is called
 with a list, ie the one you wish to validate. This function will signal a BAD-TEMPLATE-FORMAT condition if the template is bad."
   (when (is-valid-template template)
-    (let ((code
-            `(lambda (list)
-               (check-type list list)
-               (handler-case
-                   (let ((temp-as-funs (the list ',(process-template-funs template))))
-                     (if (/= (the fixnum
-                                  ,(template-nested-length template))
-                             (the fixnum
-                                  (nested-list-length list)))
-                         nil
-                         (labels ((func (lst lst1)
-                                    (check-type lst1 list)
-                                    (loop :for ele1 list :in lst 
-                                          :for ele2 :in lst1
-                                          :if (and (not (functionp (first ele1)))
-                                                   (listp ele2))
-                                            :do  (func ele1 ele2)
-                                          :else
-                                            :do (loop :for fun-and-arg list :in ele1
-                                                      :do (let ((fun (the function (fun fun-and-arg)))
-                                                                (arg (argument fun-and-arg)))
-                                                            (call-fun-check-true fun ele2 arg))))))
-                           (func temp-as-funs list)
-                           t)))
-                 (failed-to-validate () nil)))))
-      (when see-code
-        (format t "~&~S~%" code))
-      (compile nil code))))
+    (alexandria:with-gensyms (temp-as-funs lst lst1 ele1 ele2 fun-and-arg fun arg list)
+      (let ((code
+              `(lambda (,list)
+                 (check-type ,list list)
+                 (handler-case
+                     (let ((,temp-as-funs (the list ',(process-template-funs template))))
+                       (if (/= (the fixnum
+                                    ,(template-nested-length template))
+                               (the fixnum
+                                    (nested-list-length ,list)))
+                           nil
+                           (labels ((func (,lst ,lst1)
+                                      (check-type ,lst1 list)
+                                      (loop :for ,ele1 list :in ,lst 
+                                            :for ,ele2 :in ,lst1
+                                            :if (and (not (functionp (first ,ele1)))
+                                                     (listp ,ele2))
+                                              :do  (func ,ele1 ,ele2)
+                                            :else
+                                              :do
+                                                 (loop :for ,fun-and-arg list :in ,ele1
+                                                       :do
+                                                          (let ((,fun (the function
+                                                                           (fun ,fun-and-arg)))
+                                                                (,arg (argument ,fun-and-arg)))
+                                                            (call-fun-check-true ,fun ,ele2 ,arg))))))
+                             (func ,temp-as-funs ,list)
+                             t)))
+                   (failed-to-validate () nil)))))
+        (when see-code
+          (format t "~&~S~%" code))
+        (compile nil code)))))
 
 (defun compile-template-entry (template-entry)
   (check-type template-entry list)
