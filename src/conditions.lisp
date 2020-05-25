@@ -66,7 +66,7 @@
 
 (defmethod print-object ((object unknown-keyword) stream)
   (print-unreadable-object (object stream :type t :identity t)
-    (format stream "~&Unknown Keyword~%~Keyword: ~A~%Message: ~A~%"
+    (format stream "~&Unknown Keyword~%Keyword: ~A~%Message: ~A~%"
             (unknown-keyword-keyword object)
             (unknown-keyword-message object))))
             
