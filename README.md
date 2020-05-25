@@ -196,8 +196,7 @@ The condition ``bad-template-format`` is signalled when a template is poorly for
 <br>
 It has three accessors<br>
 * bad-template-format-template - this is the broken template
-* bad-template-format-signaller - the condition that caused ``bad-template-format`` to be signalled
-not always set.
+* bad-template-format-signaller - the condition that caused ``bad-template-format`` to be signalled this is not always set.
 * bad-template-format-message - a descriptive message stating what happened.
 <br>
 There is another condition that is signalled internally `` failed-to-validate `` if this condition is
