@@ -32,7 +32,7 @@ repeated LENGTH times"
         :appending pattern-list))
 
 (defun define-key (key func)
-  "Takes in a keywrod and associates the keyword with the function. The function must accept two
+  "Takes in a keyword and associates the keyword with the function. The function must accept two
   arguments, the first an entry ie a value in a list wanting to be validated and the second an object
   see any of the other uses of DEFINE-KEY in src/validate-list.lisp to get an idea what your lambda should look like. Here is 
   an example (define-key :n= 
@@ -78,7 +78,7 @@ repeated LENGTH times"
   (check-type entry number)
   (greater-than entry greater-than))
 
-(define-key :greater-than #'greater-than)
+(define-key :greater-than #'handle-greater-than)
 
 (defun handle-or (entry list-of-potentials)
   (check-type list-of-potentials list)
@@ -234,5 +234,3 @@ checked against the template then this func returns nil. For a list of examples 
               t))
       (failed-to-validate ()
         nil))))
-
-

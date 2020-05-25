@@ -112,24 +112,70 @@ Here are the other keys and what they do (each key takes exactly 1 argument):
 * :less-than - checks if list entry is a number and is lower than arg.
 * :greater-than - checks if list entry is a number and is greater than arg.
 * :or - checks if list entry is equalp to any items within the list arg ie '("hello" "help" "house")
-* :satisfies - takes a function or list of functions in arg and calls the functions on entry if any returns t, this returns t. 
+* :satisfies - takes a function or list of functions in arg and calls the functions on entry if any returns t, this returns t.
+
+## Compiling templates
+
+If you reckon you will be making heavy use of a template you can compile it using ``compile-template``
+This function takes a template as an argument and returns a compiled function, this compiled function can be used to validate a list simply by calling the function with the list you wish to validate as the only argument.<br>
+Here is an example: 
+```lisp
+VALIDATE-LIST> (compile-template *test-template8*)
+#<FUNCTION (LAMBDA (LIST)) {10054100CB}>
+NIL
+NIL
+VALIDATE-LIST> (funcall * *test-list8*)
+T
+VALIDATE-LIST> 
+```
+
+Compiling the templates offers quite the speed advantage.<br>
+Here are some tests: 
+
+```lisp
+
+VALIDATE-LIST> (let ((fun (compile-template *test-template8*)))
+                 (time (dotimes (i 1000000)
+                         (funcall fun *test-list8*))))
+Evaluation took:
+  1.714 seconds of real time
+  1.715102 seconds of total run time (1.714115 user, 0.000987 system)
+  [ Run times consist of 0.013 seconds GC time, and 1.703 seconds non-GC time. ]
+  100.06% CPU
+  4,443,092,454 processor cycles
+  192,020,432 bytes consed
+  
+NIL
+VALIDATE-LIST> (time (dotimes (i 1000000)
+                       (validate-list-p *test-list8* *test-template8*)))
+Evaluation took:
+  6.871 seconds of real time
+  6.895927 seconds of total run time (6.858373 user, 0.037554 system)
+  [ Run times consist of 0.203 seconds GC time, and 6.693 seconds non-GC time. ]
+  100.36% CPU
+  17,810,167,834 processor cycles
+  2,784,014,576 bytes consed
+  
+NIL
+
+```
 
 ## Defining your own symbols
-If you find you need more functionality you can define your own symbols with the function ``add-new-symbol``
+If you find you need more functionality you can define your own symbols with the function ``define-key``
 <br>
 here is the doctsring:<br>
-> Takes in a symbol and associates the symbol with the function. <br>The function must accept two
+> Takes in a keyword and associates the keyword with the function. The function must accept two
 > arguments, the first an entry ie a value in a list wanting to be validated and the second an object
-> see any of the definitions of handle-* to get an idea what your lambda should look like.<br> Here is 
-> an example <br>
+> see any of the other uses of DEFINE-KEY in src/validate-list.lisp to get an idea what your λ should > look like.<br> 
+> Here is an example <br>
 ```lisp
-(add-new-symbol :n= 
+(define-key :n= 
                 (lambda (entry arg) 
                   (check-type entry number)
                   (check-type arg number)
                   (= arg entry)))
 ```
-> Now with the new symbol :n= defined this can be used in a template like so where list is '(100)
+> Now with the new keyword :n= defined this can be used in a template like so where list is '(100)
 > and the template is '((:n= 100)). 
 
 ## Other
@@ -138,6 +184,14 @@ The condition ``unknown-keyword`` is signalled when you put an unknown keyword i
 It has two accessors
 * unknown-keyword-keyword - returns the keyword you tried to use.
 * unknown-keyword-message - a description of what went wrong.
+<br>
+The condition ``bad-template-format`` is signalled when a template is poorly formed.
+<br>
+It has three accessors
+* bad-template-format-template - this is the broken template
+* bad-template-format-signaller - the condition that caused ``bad-template-format`` to be signalled
+not always set.
+* bad-template-format-message - a descriptive message stating what happened.
 <br>
 There is another condition that is signalled internally ``failed-to-validate`` if this condition is
 signalled when using the normal library functions this is a bug and please report it. 

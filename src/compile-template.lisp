@@ -1,6 +1,5 @@
 (in-package #:validate-list)
-;;the compile could be a loop that steps through both at the same time
-;;calling the correct function on the other list
+
 (defun compile-template (template &optional (see-code nil))
   "Takes in a valid TEMPLATE and returns a compiled 1 argument function. This function is called
 with a list, ie the one you wish to validate. This function will signal a BAD-TEMPLATE-FORMAT condition if the template is bad."
