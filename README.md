@@ -161,20 +161,25 @@ NIL
 ```
 
 ## Defining your own symbols
+
 If you find you need more functionality you can define your own symbols with the function ``define-key``
 <br>
 here is the doctsring:<br>
 > Takes in a keyword and associates the keyword with the function. The function must accept two
 > arguments, the first an entry ie a value in a list wanting to be validated and the second an object
-> see any of the other uses of DEFINE-KEY in src/validate-list.lisp to get an idea what your λ should > look like.<br> 
+> see any of the other uses of DEFINE-KEY in src/validate-list.lisp to get an idea what your λ should > look like. 
 > Here is an example <br>
+
 ```lisp
+
 (define-key :n= 
                 (lambda (entry arg) 
                   (check-type entry number)
                   (check-type arg number)
                   (= arg entry)))
+                  
 ```
+
 > Now with the new keyword :n= defined this can be used in a template like so where list is '(100)
 > and the template is '((:n= 100)). 
 
