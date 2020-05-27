@@ -44,7 +44,7 @@ repeated LENGTH times"
   and the template is '((:n= 100)).
 "
   (check-type key keyword)
-  (check-type func function)
+  (check-type func (or function symbol))
   (setf (gethash key *functions*)
         func))
 
@@ -105,13 +105,24 @@ repeated LENGTH times"
 
 (defun handle-satisfies (entry func)
   (check-type func (or symbol function list))
-  (typecase func
-    (list (some (lambda (fun)
-                  (if (equal (type-of fun) 'CONS)
-                      (error "Please remove #' from the functions names within the list: ~A" func)
-                      (funcall fun entry)))
-                func))
-    ((or function symbol) (funcall func entry))))
+  (handler-case 
+      (typecase func
+        (list (some (lambda (fun)
+                      (if (equal (type-of fun) 'CONS)
+                          (signal-bad-template-format
+                           func
+                           (format nil "Please remove #' from the functions names within the list: ~A"
+                                   func))
+                          (funcall fun entry)))
+                    func))
+        ((or function symbol) (funcall func entry)))
+    (UNDEFINED-FUNCTION (c)
+      (signal-bad-template-format
+       func
+       (format nil
+               "Please remove #' or ' from the functions names ~A"
+               func) c))))
+                       
 
 (define-key :satisfies #'handle-satisfies)
 
@@ -170,7 +181,7 @@ or remove ~A from your template"
     (simple-type-error (c)
       (signal-bad-template-format
        template-entry
-       (format nil "One of the keywords (or its args) within TEMPLATE is not valid. Either correct the error or add the keyword and its functionality using 'define-key'") c))))
+       (format nil "One of the keywords (or its args) within TEMPLATE is not valid. Either correct the error or add the keyword and its functionality using #'define-key'") c))))
 
 
 (defun same-structures-p (list template &optional (print-lists nil))

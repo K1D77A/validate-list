@@ -97,7 +97,6 @@
 ;;14 is bad on purpose, , instead of ,@
 (defparameter *test-list14*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96)
                                           1 2 (2) (6 7) ("oof" 23 "kadoof") "abc")))
-
 (defparameter *test-template14* `((:equal "year")(:type integer :or (96 97 98))
                                   ((:or ("keyvals" "time")) ;;broken intentionally
                                    ;;this is an example of messing up ,@
