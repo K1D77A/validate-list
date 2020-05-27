@@ -59,10 +59,10 @@
 (defmethod print-object ((object failed-to-validate) stream)
   (print-unreadable-object (object stream :type t :identity t)
     (format stream "~&Failed to validate list~%Keyword: ~S~%Arg(s): ~S~%Entry: ~S~%Message: ~A~%"
-            (key object)
-            (arg object)
-            (entry object)
-            (message object))))
+            (failed-to-validate-key object)
+            (failed-to-validate-arg object)
+            (failed-to-validate-entry object)
+            (failed-to-validate-message object))))
 
 (defmethod print-object ((object unknown-keyword) stream)
   (print-unreadable-object (object stream :type t :identity t)
