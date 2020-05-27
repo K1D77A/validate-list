@@ -58,7 +58,7 @@
 
 (defmethod print-object ((object failed-to-validate) stream)
   (print-unreadable-object (object stream :type t :identity t)
-    (format stream "~&Failed to validate list~%Keyword: ~A~%Arg: ~A~%Entry: ~A~%Message: ~A~%"
+    (format stream "~&Failed to validate list~%Keyword: ~S~%Arg(s): ~S~%Entry: ~S~%Message: ~A~%"
             (key object)
             (arg object)
             (entry object)

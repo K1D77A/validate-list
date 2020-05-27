@@ -49,8 +49,12 @@ repeated LENGTH times"
         func))
 
 (defun handle-type (entry type)
-  (check-type type symbol)
-  (typep entry type))
+  (check-type type (or symbol list))
+  (typecase type
+    (list (some (lambda (type)
+                  (typep entry type))
+                type))
+    (symbol (typep entry type))))
 
 (define-key :type #'handle-type)
 
@@ -65,7 +69,13 @@ repeated LENGTH times"
   (greater-than-or-equal maxlen (length entry)))
 
 (define-key :maxlen #'handle-maxlen)
-    
+
+(defun handle-length (entry length)
+  (check-type length (integer 1))
+  (= length (length entry)))
+
+(define-key :length #'handle-length)
+
 (defun handle-less-than (entry less-than)
   (check-type less-than number)
   (check-type entry number)
@@ -94,12 +104,14 @@ repeated LENGTH times"
 (define-key :equal #'handle-equal)
 
 (defun handle-satisfies (entry func)
-  (check-type func (or function list))
+  (check-type func (or symbol function list))
   (typecase func
-    (list (some (lambda (func)
-                  (funcall func entry))
+    (list (some (lambda (fun)
+                  (if (equal (type-of fun) 'CONS)
+                      (error "Please remove #' from the functions names within the list: ~A" func)
+                      (funcall fun entry)))
                 func))
-    (function (funcall func entry))))
+    ((or function symbol) (funcall func entry))))
 
 (define-key :satisfies #'handle-satisfies)
 
@@ -111,6 +123,17 @@ repeated LENGTH times"
     (greater-than max entry min)))
 
 (define-key :between #'handle-between)
+
+(defun handle-contents (entry template-entry)
+  (check-type entry list)
+  (check-type template-entry list)
+  (not (some #'null (mapcar (lambda (ele)
+                              (process-template-entry template-entry ele))
+                            entry))))
+
+(define-key :contents #'handle-contents)
+
+
 
 (defun map-plist (func plist)
   "Maps a PLIST and calls FUNC that accepts two arguments. returns a list of
@@ -141,73 +164,91 @@ or remove ~A from your template"
                (if (not (funcall (keyword->function keyword) entry arg))
                    (signal-failed-to-validate keyword arg entry
                                               (format nil
-                                                      "failed to validate '(~A ~A) with entry ~A"
+                                                      "failed to validate '(~A ~A) with entry ~S"
                                                       keyword arg entry))
                    t))
              template-entry))
 
-(defun nested-list-length (list)
-  "Recurses through LIST and returns how many elements there are in the nested list"
-  (check-type list list)
-  (let ((n 0))
-    (labels ((rec (list)
-               (cond ((null list)
-                      nil)
-                     ((atom list)
-                      (incf n))
-                     ((listp list)
-                      (progn (rec (first list))
-                             (rec (rest list)))))))
-      (rec list))
-    n))
-
-(defun is-valid-template (template)
-  "Takes in a TEMPLATE and attempts to make sure it has a valid structure. If it does not then signals
-condition BAD-TEMPLATE-FORMAT"
-  (check-type template list)
+(defun same-structures-p (list template &optional (print-lists nil))
+  "Given LIST and TEMPLATE of arbitrary depth, return t if they have the same structure or nil if
+ not. In the event of any error this function returns nil, as the assumption is that the structures
+are not the same."
   (handler-case
-      (labels ((rec (list)
-                 (cond ((null list)
-                        nil)
-                       ((listp list)
-                        (progn
-                          (if (and (listp (first list)) (keywordp (first (first list))))
-                              (map-plist (lambda (key val)
-                                           (declare (ignore key val))
-                                           (values))
-                                         (first list)))
-                          (rec (first list))
-                          (rec (rest list)))))))
-        (rec template)
+      (labels ((rec (lst1 templ)
+                 (when print-lists
+                   (format t "List: ~A~%Template: ~A~%" lst1 templ))
+                 (cond ((and (null lst1)
+                             (null templ))
+                        t)
+                       ((or (and (null lst1)
+                                 templ)
+                            (and (null templ)
+                                 lst1))
+                        (signal-bad-template-format template
+                                                    "TEMPLATE and LIST do not have equal structures"))
+                       ((listp (first templ))
+                        (progn (rec (first lst1) (first templ))
+                               (rec (rest lst1) (rest templ)))))))
+        (rec list template)
         t)
-    (SIMPLE-TYPE-ERROR (c)
-      (signal-bad-template-format
-       template (format nil "The keys within TEMPLATE plist are not all keywords.") c))
-    (SIMPLE-ERROR (c)
-      (signal-bad-template-format
-       template (format nil "TEMPLATE provided contains invalid plists.") c))))
+    (condition ()
+      nil)
+    (bad-template-format ()
+      nil)));;just a placeholder error
 
-(defun template-nested-length (list)
-  "Counts how many 'valid' lists are contained within LIST. Checking if a list is valid is done
-by assuming that the first element is a keyword. This means that no keywords can occupy the first
-element of a list being passed as args to a function"
-  (check-type list list)
-  (let ((n 0))
-    (labels ((rec (list)
-               (cond ((null list)
-                      nil)
-                     ((listp list)
-                      (progn
-                        (if (and (listp (first list)) (keywordp (first (first list))))
-                            ;;attempting to ignore lists that are args to functions. don't use
-                            ;;keywords as args to funcs
-                            (incf n))
-                        (rec (first list))
-                        (rec (rest list)))))))
-      (rec list))
-    n))
+  (defun is-valid-template (template)
+    "Takes in a TEMPLATE and attempts to make sure it has a valid structure. If it does not then signals
+condition BAD-TEMPLATE-FORMAT"
+    (check-type template list)
+    (handler-case
+        (labels ((rec (list)
+                   (cond ((null list)
+                          nil)
+                         ((listp list)
+                          (progn
+                            (if (and (listp (first list)) (keywordp (first (first list))))
+                                (map-plist (lambda (key val)
+                                             (declare (ignore val))
+                                             (keyword->function key)
+                                             (values))
+                                           (first list)))
+                            (rec (first list))
+                            (rec (rest list)))))))
+          (rec template)
+          t)
+      (unknown-keyword (c)
+        (signal-bad-template-format
+         template (format nil "One of the keywords within TEMPLATE are not valid. Either correct the error or add the keyword and its functionality using 'define-key'") c))
+      (SIMPLE-TYPE-ERROR (c)
+        (signal-bad-template-format
+         template (format nil "The keys within TEMPLATE plist are not all keywords.") c))
+      (SIMPLE-ERROR (c)
+        (signal-bad-template-format
+         template (format nil "TEMPLATE provided contains invalid plists.") c))))
 
-(defun validate-list-p (list template)
+(defparameter *test-list6*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96))))
+(defparameter *test-template6* `((:equal "year")(:type integer :or (96 97 98))
+                                 ((:or ("cookie" "country" "keyvals"))
+                                  ,(repeat-pattern 4 '((:type string :maxlen 6 :minlen 2)
+                                                       (:type number :between (0 100)))))))
+
+(defparameter *test-list7*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 4 6)))
+(defparameter *test-template7* `((:equal "year")(:type integer :or (96 97 98))
+                                 ((:or ("cookie" "country" "keyvals"))
+                                  ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
+                                                       (:type number :between (0 100))))
+                                  ,@(repeat-test 3 '(:type number :satisfies evenp)))))
+
+(defparameter *validate-list-p-err-message*
+  "The structure of LIST and TEMPLATE are not the same. Often this error occurs because you have
+ messed up the construction of your TEMPLATE because getting the nesting correct can be a pain, it
+ is also possible that the list you are trying to validate doesn't have the structure you expected.
+Please consider looking at how you have constructed your template especially use of , and ,@.
+ Consider using 'is-valid-template' to check to make sure the structure of your template is valid
+ and no keywords are broken. You can also use 'same-structures-p' if you have an example list to 
+validate your TEMPLATE with.")
+
+(defun validate-list (list template)
   "Takes in a LIST that you want to validate, and a TEMPLATE, the TEMPLATE is a list of lists,
 each list contains keywords and their values (a full list of keys can be found by calling CURRENT-KEYS), if TEMPLATE is 'invalid' then the condition BAD-TEMPLATE-FORM is signalled. Each list
 within the template represents 1 element in the LIST and is a 'description' of its contents. 
@@ -215,22 +256,44 @@ For example given the template '((:equal \"key\") (:type string :maxlen 40)) thi
 to validate the list '(\"key\" \"abcdeegadfgfsdf\") because as the template says, the first item in 
 list is \"key\" and the second according to the template should be of type 'string and no longer
 than 40 characters long, which it is not, so this is valid and will return t, if a list fails when
-checked against the template then this func returns nil. For a list of examples see src/tests.lisp"
+checked against the template then this func signals the condition FAILED-TO-VALIDATE, which
+will contain information about where validation failed. For a list of examples see src/tests.lisp. 
+In the interests of speed no checks are done to validate your template before validation happens, 
+you can use 'is-valid-template' as a precursory check to make sure that the template is
+constructed with valid plists and valid keywords."
+  ;;need to state that only copy the ones that pass xD
   (check-type list list)
   (check-type template list)
-  (when (is-valid-template template)
-    (handler-case 
-        (if (/= (template-nested-length template)(nested-list-length list))
-            nil
-            (labels ((rec (list template acc)
-                       (cond ((or (null list)
-                                  (null template))
-                              nil)
-                             ((listp (first template))
-                              (append (rec (first list) (first template) acc)
-                                      (rec (rest list) (rest template) acc)))
-                             (t (process-template-entry template list)))))
-              (rec list template '())
-              t))
-      (failed-to-validate ()
-        nil))))
+  (handler-case 
+      (labels ((rec (list templ acc)
+                 (format t "template: ~S~%" templ)
+                 (format t "list: ~S~%" list)
+                 (cond ((and (null list)
+                             (null templ))
+                        nil)
+                       ((or (and (null list) templ)
+                            (and (null templ) list))
+                        (signal-bad-template-format
+                         template
+                         (format nil "~A" *validate-list-p-err-message*)))
+                       ;; (error "list or templ is nil"))
+                       ((listp (first templ))
+                        (format t "appending ~%")
+                        (append (rec (first list) (first templ) acc)
+                                (rec (rest list) (rest templ) acc)))
+                       ;;here I need a check (find :type templ)
+                       ;;and (find 'list )
+                       ;;and then have to handle processing differently :cry:
+                       ((and (listp list)
+                             (and (= (position :type templ :test #'eq)
+                                     (1- (position 'list templ :test #'eq)))))
+                        (process-template-entry templ list))
+                       (t
+                        (format t "processing template~%")
+                        (process-template-entry templ list)))))
+        (rec list template '())
+        t)
+    (unknown-keyword (c)
+      (signal-bad-template-format
+       template (format nil "One of the keywords within TEMPLATE are not valid. Either correct the error or add the keyword and its functionality using 'define-key'") c))))
+

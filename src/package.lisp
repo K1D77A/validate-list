@@ -2,7 +2,8 @@
 
 (defpackage #:validate-list
   (:use #:cl)
-  (:export #:validate-list-p
+  (:export #:validate-list
+           #:same-structures-p
            #:define-key
            #:repeat-pattern
            #:current-keys
