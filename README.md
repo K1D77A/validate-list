@@ -134,29 +134,30 @@ Here are some tests:
 
 ```lisp
 
+VALIDATE-LIST> (time (dotimes (i 1000000)
+                       (validate-list *test-list8* *test-template8*)))
+Evaluation took:
+  5.684 seconds of real time
+  5.704452 seconds of total run time (5.687283 user, 0.017169 system)
+  [ Run times consist of 0.168 seconds GC time, and 5.537 seconds non-GC time. ]
+  100.35% CPU
+  14,732,501,992 processor cycles
+  2,415,997,280 bytes consed
+  
+NIL
 VALIDATE-LIST> (let ((fun (compile-template *test-template8*)))
                  (time (dotimes (i 1000000)
                          (funcall fun *test-list8*))))
 Evaluation took:
-  1.714 seconds of real time
-  1.715102 seconds of total run time (1.714115 user, 0.000987 system)
-  [ Run times consist of 0.013 seconds GC time, and 1.703 seconds non-GC time. ]
-  100.06% CPU
-  4,443,092,454 processor cycles
-  192,020,432 bytes consed
+  2.749 seconds of real time
+  2.751574 seconds of total run time (2.748586 user, 0.002988 system)
+  [ Run times consist of 0.018 seconds GC time, and 2.734 seconds non-GC time. ]
+  100.11% CPU
+  7,126,663,684 processor cycles
+  192,020,368 bytes consed
   
 NIL
-VALIDATE-LIST> (time (dotimes (i 1000000)
-                       (validate-list-p *test-list8* *test-template8*)))
-Evaluation took:
-  6.871 seconds of real time
-  6.895927 seconds of total run time (6.858373 user, 0.037554 system)
-  [ Run times consist of 0.203 seconds GC time, and 6.693 seconds non-GC time. ]
-  100.36% CPU
-  17,810,167,834 processor cycles
-  2,784,014,576 bytes consed
-  
-NIL
+VALIDATE-LIST> 
 
 ```
 

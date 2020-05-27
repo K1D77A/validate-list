@@ -160,14 +160,20 @@ or remove ~A from your template"
                                         keyword keyword)))))
 
 (defun process-template-entry (template-entry entry)
-  (map-plist (lambda (keyword arg)
-               (if (not (funcall (keyword->function keyword) entry arg))
-                   (signal-failed-to-validate keyword arg entry
-                                              (format nil
-                                                      "failed to validate '(~A ~A) with entry ~S"
-                                                      keyword arg entry))
-                   t))
-             template-entry))
+  (handler-case
+      (map-plist (lambda (keyword arg)
+                   (if (not (funcall (keyword->function keyword) entry arg))
+                       (signal-failed-to-validate keyword arg entry
+                                                  (format nil
+                                                          "failed to validate '(~A ~A) with entry ~S"
+                                                          keyword arg entry))
+                       t))
+                 template-entry)
+    (simple-type-error (c)
+      (signal-bad-template-format
+       template-entry
+       (format nil "One of the keywords (or its args) within TEMPLATE is not valid. Either correct the error or add the keyword and its functionality using 'define-key'") c))))
+
 
 (defun same-structures-p (list template &optional (print-lists nil))
   "Given LIST and TEMPLATE of arbitrary depth, return t if they have the same structure or nil if
@@ -196,48 +202,35 @@ are not the same."
     (bad-template-format ()
       nil)));;just a placeholder error
 
-  (defun is-valid-template (template)
-    "Takes in a TEMPLATE and attempts to make sure it has a valid structure. If it does not then signals
+(defun is-valid-template (template)
+  "Takes in a TEMPLATE and attempts to make sure it has a valid structure. If it does not then signals
 condition BAD-TEMPLATE-FORMAT"
-    (check-type template list)
-    (handler-case
-        (labels ((rec (list)
-                   (cond ((null list)
-                          nil)
-                         ((listp list)
-                          (progn
-                            (if (and (listp (first list)) (keywordp (first (first list))))
-                                (map-plist (lambda (key val)
-                                             (declare (ignore val))
-                                             (keyword->function key)
-                                             (values))
-                                           (first list)))
-                            (rec (first list))
-                            (rec (rest list)))))))
-          (rec template)
-          t)
-      (unknown-keyword (c)
-        (signal-bad-template-format
-         template (format nil "One of the keywords within TEMPLATE are not valid. Either correct the error or add the keyword and its functionality using 'define-key'") c))
-      (SIMPLE-TYPE-ERROR (c)
-        (signal-bad-template-format
-         template (format nil "The keys within TEMPLATE plist are not all keywords.") c))
-      (SIMPLE-ERROR (c)
-        (signal-bad-template-format
-         template (format nil "TEMPLATE provided contains invalid plists.") c))))
-
-(defparameter *test-list6*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96))))
-(defparameter *test-template6* `((:equal "year")(:type integer :or (96 97 98))
-                                 ((:or ("cookie" "country" "keyvals"))
-                                  ,(repeat-pattern 4 '((:type string :maxlen 6 :minlen 2)
-                                                       (:type number :between (0 100)))))))
-
-(defparameter *test-list7*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 4 6)))
-(defparameter *test-template7* `((:equal "year")(:type integer :or (96 97 98))
-                                 ((:or ("cookie" "country" "keyvals"))
-                                  ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
-                                                       (:type number :between (0 100))))
-                                  ,@(repeat-test 3 '(:type number :satisfies evenp)))))
+  (check-type template list)
+  (handler-case
+      (labels ((rec (list)
+                 (cond ((null list)
+                        nil)
+                       ((listp list)
+                        (progn
+                          (if (and (listp (first list)) (keywordp (first (first list))))
+                              (map-plist (lambda (key val)
+                                           (declare (ignore val))
+                                           (keyword->function key)
+                                           (values))
+                                         (first list)))
+                          (rec (first list))
+                          (rec (rest list)))))))
+        (rec template)
+        t)
+    ((or unknown-keyword bad-template-format) (c)
+      (signal-bad-template-format
+       template (format nil "One of the keywords within TEMPLATE are not valid. Either correct the error or add the keyword and its functionality using 'define-key'") c))
+    (SIMPLE-TYPE-ERROR (c)
+      (signal-bad-template-format
+       template (format nil "The keys within TEMPLATE plist are not all keywords.") c))
+    (SIMPLE-ERROR (c)
+      (signal-bad-template-format
+       template (format nil "TEMPLATE provided contains invalid plists.") c))))
 
 (defparameter *validate-list-p-err-message*
   "The structure of LIST and TEMPLATE are not the same. Often this error occurs because you have
@@ -265,9 +258,7 @@ constructed with valid plists and valid keywords."
   (check-type list list)
   (check-type template list)
   (handler-case 
-      (labels ((rec (list templ acc)
-                 (format t "template: ~S~%" templ)
-                 (format t "list: ~S~%" list)
+      (labels ((rec (list templ acc)                 
                  (cond ((and (null list)
                              (null templ))
                         nil)
@@ -277,8 +268,7 @@ constructed with valid plists and valid keywords."
                          template
                          (format nil "~A" *validate-list-p-err-message*)))
                        ;; (error "list or templ is nil"))
-                       ((listp (first templ))
-                        (format t "appending ~%")
+                       ((listp (first templ))                        
                         (append (rec (first list) (first templ) acc)
                                 (rec (rest list) (rest templ) acc)))
                        ;;here I need a check (find :type templ)
@@ -288,11 +278,19 @@ constructed with valid plists and valid keywords."
                              (and (= (position :type templ :test #'eq)
                                      (1- (position 'list templ :test #'eq)))))
                         (process-template-entry templ list))
-                       (t
-                        (format t "processing template~%")
+                       (t                        
                         (process-template-entry templ list)))))
         (rec list template '())
         t)
+    (SIMPLE-ERROR (c)
+      (signal-bad-template-format
+       template (format nil "You hit a type error SIMPLE-ERROR. Alexandria's DOPLIST signals
+conditions of this type when a plist is malformed, so go and make sure your TEMPLATE consists
+of valid plists") c))
+    (type-error (c)
+      (signal-bad-template-format
+       template (format nil "You hit a type error. The implication is that you are trying to
+validate a LIST whose structure is not the same as your TEMPLATE.") c))
     (unknown-keyword (c)
       (signal-bad-template-format
        template (format nil "One of the keywords within TEMPLATE are not valid. Either correct the error or add the keyword and its functionality using 'define-key'") c))))
