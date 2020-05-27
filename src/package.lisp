@@ -17,6 +17,7 @@
            #:bad-template-format-template
            #:bad-template-format-signaller
            #:bad-template-format-message
+           #:failed-to-validate
            #:failed-to-validate-key
            #:failed-to-validate-arg
            #:failed-to-validate-entry
