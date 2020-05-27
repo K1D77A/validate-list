@@ -43,28 +43,28 @@
                                   ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
                                                        (:type number :between (0 100))))
                                   ,@(repeat-test 3 '(:type number :satisfies (evenp oddp))))))
-
+;;9 is broken intentionally. bad :or 
 (defparameter *test-list9*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 5 6)))
 (defparameter *test-template9* `((:equal "year")(:type integer :or (96 97 98))
                                  ((:or ("cookie" "country"))
                                   ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
                                                        (:type number :between (0 100)))))
                                  ,(repeat-test 3 '(:type number :satisfies (evenp oddp)))))
-
+;;10 is broken intentionally. bad :equal
 (defparameter *test-list10*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 5 6)))
 (defparameter *test-template10* `((:equal "year")(:type integer :or (96 97 98))
                                   ((:or ) ;;broken intentionally
                                    ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
                                                         (:type number :between (0 100)))))
                                   ,(repeat-test 3 '(:type number :satisfies (evenp oddp)))))
-
+;;11 is broken intentionally. invalid :or
 (defparameter *test-list11*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 5 6)))
 (defparameter *test-template11* `((:equal "year")(:type integer :or (96 97 98))
                                   ((:or 'abc 'def 'hhh) ;;broken intentionally
                                    ,(repeat-pattern 3 '((:type string :maxlen 6 :minlen 2)
                                                         (:type number :between (0 100)))))
                                   ,(repeat-test 3 '(:type number :satisfies (evenp oddp)))))
-
+;;12 is broken intentionally, bad :or
 (defparameter *test-list12*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96) 2 5 (6 7 8))))
 (defparameter *test-template12* `((:equal "year")(:type integer :or (96 97 98))
                                   ((:or "keyvals" "time") ;;broken intentionally
@@ -94,7 +94,7 @@
                                    (:type list :maxlen 2)
                                    (:type list :minlen 1 :maxlen 5 :contents (:type string))
                                    (:type string :equal "abc"))))
-
+;;14 is bad on purpose, , instead of ,@
 (defparameter *test-list14*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96)
                                           1 2 (2) (6 7) ("oof" 23 "kadoof") "abc")))
 
@@ -115,7 +115,6 @@
 
 (defparameter *test-list15*  '("year" 98 ("keyvals" ("USA" 35 "Poland" 55 "UK" 96)
                                           (2) (6 7) ("oof" 23 "kadoof") "abc")))
-
 (defparameter *test-template15* `((:equal "year")(:type integer :or (96 97 98))
                                   ((:or ("keyvals" "time")) 
                                    ,(repeat-pattern 3
@@ -181,6 +180,7 @@
 
 (lisp-unit:define-test test-validation-error
   (lisp-unit:assert-error 'bad-template-format (validate-list-p *test-list6* *test-template6*))
+  (lisp-unit:assert-error 'bad-template-format (validate-list-p *test-list10* *test-template10*))
   (lisp-unit:assert-error 'bad-template-format (validate-list-p *test-list12* *test-template12*))
   (lisp-unit:assert-error 'bad-template-format (validate-list-p *test-list10* *test-template10*))
   (lisp-unit:assert-error 'bad-template-format (validate-list-p *test-list11* *test-template11*)))
@@ -192,13 +192,18 @@
   (lisp-unit:assert-true (compile-template-and-test *test-list4* *test-template4*))
   (lisp-unit:assert-true (compile-template-and-test *test-list5* *test-template5*))
   (lisp-unit:assert-true (compile-template-and-test *test-list7* *test-template7*))
-  (lisp-unit:assert-true (compile-template-and-test *test-list8* *test-template8*)))
+  (lisp-unit:assert-true (compile-template-and-test *test-list8* *test-template8*))
+  (lisp-unit:assert-true (compile-template-and-test *test-list12a* *test-template12a*))
+  (lisp-unit:assert-true (compile-template-and-test *test-list15* *test-template15*))
+  (lisp-unit:assert-true (compile-template-and-test *test-list13* *test-template13*))
+  (lisp-unit:assert-true (compile-template-and-test *test-list16* *test-template16*)))
 
 (lisp-unit:define-test test-compiled-false 
-  (lisp-unit:assert-false (compile-template-and-test *test-list6* *test-template6*))
-  (lisp-unit:assert-false (compile-template-and-test *test-list1* *test-template2*))
-  (lisp-unit:assert-false (compile-template-and-test *test-list2* *test-template1*))
-  (lisp-unit:assert-false (compile-template-and-test *test-list9* *test-template9*)))
+  (lisp-unit:assert-error 'bad-template-format (compile-template-and-test*test-list6* *test-template6*))
+  (lisp-unit:assert-error 'bad-template-format (compile-template-and-test*test-list10* *test-template10*))
+  (lisp-unit:assert-error 'bad-template-format (compile-template-and-test*test-list12* *test-template12*))
+  (lisp-unit:assert-error 'bad-template-format (compile-template-and-test*test-list10* *test-template10*))
+  (lisp-unit:assert-error 'bad-template-format (compile-template-and-test*test-list11* *test-template11*)))
 
 (lisp-unit:define-test test-compiled-error
   (lisp-unit:assert-error 'bad-template-format
