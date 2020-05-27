@@ -4,8 +4,7 @@
   "Takes in a valid TEMPLATE and returns a compiled 1 argument function. This function is called
 with a list, ie the one you wish to validate. This function will signal a BAD-TEMPLATE-FORMAT condition if the template is bad."
   (when (is-valid-template template)
-    (alexandria:with-gensyms (temp-as-funs con lst lst1 ele1 ele2
-                                           fun-and-arg fun arg list)
+    (alexandria:with-gensyms (temp-as-funs con lst lst1 ele1 ele2 fun-and-arg fun arg list)
       (let ((code
               `(lambda (,list)
                  (check-type ,list list)

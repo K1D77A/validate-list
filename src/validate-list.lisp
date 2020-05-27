@@ -133,8 +133,6 @@ repeated LENGTH times"
 
 (define-key :contents #'handle-contents)
 
-
-
 (defun map-plist (func plist)
   "Maps a PLIST and calls FUNC that accepts two arguments. returns a list of
   funcall-result"
@@ -224,7 +222,8 @@ condition BAD-TEMPLATE-FORMAT"
         t)
     ((or unknown-keyword bad-template-format) (c)
       (signal-bad-template-format
-       template (format nil "One of the keywords within TEMPLATE are not valid. Either correct the error or add the keyword and its functionality using 'define-key'") c))
+       template (format nil "One of the keywords within TEMPLATE are not valid. Either correct
+ the error or add the keyword and its functionality using 'define-key'") c))
     (SIMPLE-TYPE-ERROR (c)
       (signal-bad-template-format
        template (format nil "The keys within TEMPLATE plist are not all keywords.") c))
@@ -250,10 +249,14 @@ to validate the list '(\"key\" \"abcdeegadfgfsdf\") because as the template says
 list is \"key\" and the second according to the template should be of type 'string and no longer
 than 40 characters long, which it is not, so this is valid and will return t, if a list fails when
 checked against the template then this func signals the condition FAILED-TO-VALIDATE, which
-will contain information about where validation failed. For a list of examples see src/tests.lisp. 
-In the interests of speed no checks are done to validate your template before validation happens, 
+will contain information about where validation failed. For a list of examples see src/tests.lisp, the invalid templates are marked. 
+In the interests of speed no checks are done to validate the structure of your template
+ before validation happens, 
 you can use 'is-valid-template' as a precursory check to make sure that the template is
-constructed with valid plists and valid keywords."
+constructed with valid plists and valid keywords. There is also the possibility that when you try
+to validate a list where you expect a certain structure and get something else you will get a 
+BAD-TEMPLATE-FORM condition where the template is fine but the list is not, just treat this like 
+the validation failed."
   ;;need to state that only copy the ones that pass xD
   (check-type list list)
   (check-type template list)
@@ -267,7 +270,6 @@ constructed with valid plists and valid keywords."
                         (signal-bad-template-format
                          template
                          (format nil "~A" *validate-list-p-err-message*)))
-                       ;; (error "list or templ is nil"))
                        ((listp (first templ))                        
                         (append (rec (first list) (first templ) acc)
                                 (rec (rest list) (rest templ) acc)))
@@ -284,14 +286,15 @@ constructed with valid plists and valid keywords."
         t)
     (SIMPLE-ERROR (c)
       (signal-bad-template-format
-       template (format nil "You hit a type error SIMPLE-ERROR. Alexandria's DOPLIST signals
+       template (format nil "You hit a SIMPLE-ERROR. Alexandria's DOPLIST signals
 conditions of this type when a plist is malformed, so go and make sure your TEMPLATE consists
 of valid plists") c))
     (type-error (c)
       (signal-bad-template-format
-       template (format nil "You hit a type error. The implication is that you are trying to
+       template (format nil "You hit a TYPE-ERROR. The implication is that you are trying to
 validate a LIST whose structure is not the same as your TEMPLATE.") c))
     (unknown-keyword (c)
       (signal-bad-template-format
-       template (format nil "One of the keywords within TEMPLATE are not valid. Either correct the error or add the keyword and its functionality using 'define-key'") c))))
+       template (format nil "One of the keywords within TEMPLATE are not valid. Either correct
+ the error or add the keyword and its functionality using 'define-key'") c))))
 

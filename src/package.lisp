@@ -16,7 +16,11 @@
            #:bad-template-format
            #:bad-template-format-template
            #:bad-template-format-signaller
-           #:bad-template-format-message)
+           #:bad-template-format-message
+           #:failed-to-validate-key
+           #:failed-to-validate-arg
+           #:failed-to-validate-entry
+           #:failed-to-validate-message)
   (:shadowing-import-from
    #:arithmetic-operators-as-words
    #:less-than

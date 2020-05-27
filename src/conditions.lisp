@@ -1,18 +1,18 @@
 (in-package #:validate-list)
 
 (define-condition failed-to-validate (error)
-  ((key
-    :initarg :key 
-    :accessor key)
-   (arg
-    :initarg :arg
-    :accessor arg)
-   (entry
-    :initarg :entry
-    :accessor entry)
-   (message
-    :initarg :message
-    :accessor message
+  ((failed-to-validate-key
+    :initarg :failed-to-validate-key 
+    :accessor failed-to-validate-key)
+   (failed-to-validate-arg
+    :initarg :failed-to-validate-arg
+    :accessor failed-to-validate-arg)
+   (failed-to-validate-entry
+    :initarg :failed-to-validate-entry
+    :accessor failed-to-validate-entry)
+   (failed-to-validate-message
+    :initarg :failed-to-validate-message
+    :accessor failed-to-validate-message
     :documentation "Message indicating what when wrong")))
 
 (define-condition unknown-keyword (error)
@@ -40,10 +40,10 @@
 
 (defun signal-failed-to-validate (keyword arg entry message)
   (error 'failed-to-validate
-         :key keyword
-         :arg arg
-         :entry entry
-         :message message))
+         :failed-to-validate-key keyword
+         :failed-to-validate-arg arg
+         :failed-to-validate-entry entry
+         :failed-to-validate-message message))
 
 (defun signal-unknown-keyword (keyword message)
   (error 'unknown-keyword
@@ -69,7 +69,6 @@
     (format stream "~&Unknown Keyword~%Keyword: ~A~%Message: ~A~%"
             (unknown-keyword-keyword object)
             (unknown-keyword-message object))))
-            
 
 (defmethod print-object ((object bad-template-format) stream)
   (print-unreadable-object (object stream :type t :identity t)
