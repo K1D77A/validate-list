@@ -209,6 +209,7 @@ It has three accessors<br>
 The condition `` failed-to-validate `` is signalled when validation fails when the structure of the
 TEMPLATE is valid for the list passed. 
 It has four accessors<br>
+
 * failed-to-validate-key - The keyword that failed to validate.
 * failed-to-validate-arg - The argument parsed to the failed keyword.
 * failed-to-validate-entry - The entry that failed the validation.
