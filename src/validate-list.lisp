@@ -108,21 +108,18 @@ repeated LENGTH times"
   (handler-case 
       (typecase func
         (list (some (lambda (fun)
-                      (if (equal (type-of fun) 'CONS)
+                      (if (typep fun 'CONS)
                           (signal-bad-template-format
                            func
-                           (format nil "Please remove #' from the functions names within the list: ~A"
+                           (format nil "Please remove #' from the functions ~
+                                        names within the list: ~A"
                                    func))
                           (funcall fun entry)))
                     func))
         ((or function symbol) (funcall func entry)))
     (UNDEFINED-FUNCTION (c)
-      (signal-bad-template-format
-       func
-       (format nil
-               "Please remove #' or ' from the functions names ~A"
-               func) c))))
-                       
+      (signal-bad-template-format func (format nil "Please remove #' or ' ~
+                                       from the functions names ~A" func) c))))
 
 (define-key :satisfies #'handle-satisfies)
 
@@ -161,28 +158,30 @@ then the function is returned, otherwise a UNKNOWN-KEYWORD condition is signalle
   (let ((func (gethash keyword *functions*)))
     (if func
         func
-        (signal-unknown-keyword keyword
-                                (format nil
-                                        "There is no function associated with the keyword ~A.
- Please define one with (define-key ..) 
-or remove ~A from your template"
-                                        keyword keyword)))))
+        (signal-unknown-keyword
+         keyword (format nil
+                         "There is no function associated with the keyword ~A.~
+                          Please define one with (define-key ..) ~
+                          or remove ~A from your template"
+                         keyword keyword)))))
 
 (defun process-template-entry (template-entry entry)
   (handler-case
       (map-plist (lambda (keyword arg)
                    (if (not (funcall (keyword->function keyword) entry arg))
-                       (signal-failed-to-validate keyword arg entry
-                                                  (format nil
-                                                          "failed to validate '(~A ~A) with entry ~S"
-                                                          keyword arg entry))
+                       (signal-failed-to-validate
+                        keyword arg entry
+                        (format nil
+                                "failed to validate '(~A   ~A) with entry ~S"
+                                keyword arg entry))
                        t))
                  template-entry)
     (simple-type-error (c)
       (signal-bad-template-format
        template-entry
-       (format nil "One of the keywords (or its args) within TEMPLATE is not valid. Either correct the error or add the keyword and its functionality using #'define-key'") c))))
-
+       (format nil "One of the keywords (or its args) within TEMPLATE ~
+                    is not valid. Either correct the error or add ~
+                    the keyword and its functionality using #'define-key'") c))))
 
 (defun same-structures-p (list template &optional (print-lists nil))
   "Given LIST and TEMPLATE of arbitrary depth, return t if they have the same structure or nil if
@@ -221,7 +220,8 @@ condition BAD-TEMPLATE-FORMAT"
                         nil)
                        ((listp list)
                         (progn
-                          (if (and (listp (first list)) (keywordp (first (first list))))
+                          (if (and (listp (first list))
+                                   (keywordp (first (first list))))
                               (map-plist (lambda (key val)
                                            (declare (ignore val))
                                            (keyword->function key)
@@ -233,11 +233,13 @@ condition BAD-TEMPLATE-FORMAT"
         t)
     ((or unknown-keyword bad-template-format) (c)
       (signal-bad-template-format
-       template (format nil "One of the keywords within TEMPLATE are not valid. Either correct
- the error or add the keyword and its functionality using 'define-key'") c))
+       template (format nil "One of the keywords within TEMPLATE are not valid.~
+                             Either correct the error or add the keyword and its ~
+                             functionality using 'define-key'") c))
     (SIMPLE-TYPE-ERROR (c)
       (signal-bad-template-format
-       template (format nil "The keys within TEMPLATE plist are not all keywords.") c))
+       template (format nil "The keys within TEMPLATE plist are not all keywords.")
+       c))
     (SIMPLE-ERROR (c)
       (signal-bad-template-format
        template (format nil "TEMPLATE provided contains invalid plists.") c))))
@@ -250,6 +252,22 @@ Please consider looking at how you have constructed your template especially use
  Consider using 'is-valid-template' to check to make sure the structure of your template is valid
  and no keywords are broken. You can also use 'same-structures-p' if you have an example list to 
 validate your TEMPLATE with.")
+
+(defun quoted-p (form)
+  (and (listp form)
+       (eql (car form) 'quote)
+       (rest form)
+       (endp (rest (rest form)))))
+
+(eval-when (:compile-toplevel :load-toplevel)
+  (defparameter *compiled-hash* (make-hash-table :test #'equal)))
+
+(define-compiler-macro validate-list (&whole form list template)
+  (if (constantp template)
+      (let ((str (symbol-name (gensym))))
+        (setf (gethash str *compiled-hash*) (compile-template template))
+        `(funcall (gethash ,str *compiled-hash*) ,list))
+      form))
 
 (defun validate-list (list template)
   "Takes in a LIST that you want to validate, and a TEMPLATE, the TEMPLATE is a list of lists,
@@ -293,19 +311,23 @@ the validation failed."
                         (process-template-entry templ list))
                        (t                        
                         (process-template-entry templ list)))))
-        (rec list template '())
+        (if (quoted-p template)
+            (first (rec list (first (rest template)) nil))
+            (rec list template '()))
         t)
     (SIMPLE-ERROR (c)
       (signal-bad-template-format
-       template (format nil "You hit a SIMPLE-ERROR. Alexandria's DOPLIST signals
-conditions of this type when a plist is malformed, so go and make sure your TEMPLATE consists
-of valid plists") c))
+       template (format nil "You hit a SIMPLE-ERROR. Alexandria's DOPLIST ~
+                    signals conditions of this type when a plist is malformed, ~
+                    so go and make sure your TEMPLATE consists of valid plists") c))
     (type-error (c)
       (signal-bad-template-format
-       template (format nil "You hit a TYPE-ERROR. The implication is that you are trying to
-validate a LIST whose structure is not the same as your TEMPLATE.") c))
+       template (format nil "You hit a TYPE-ERROR. The implication is that you are ~
+                        trying to validate a LIST whose structure is not the same ~
+                         as your TEMPLATE.") c))
     (unknown-keyword (c)
       (signal-bad-template-format
-       template (format nil "One of the keywords within TEMPLATE are not valid. Either correct
- the error or add the keyword and its functionality using 'define-key'") c))))
+       template (format nil "One of the keywords within TEMPLATE are ~
+                            not valid. Either correct the error or add ~
+                       the keyword and its functionality using 'define-key'") c))))
 

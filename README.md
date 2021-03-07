@@ -1,4 +1,32 @@
+
 # validate-list
+
+## update notes
+
+Now with a compiler macro that will convert constant templates straight into their
+compiled form using (compile-template), by constant it would mean something like
+`(validate-list <my list> '((im a template)))` For a list to be satisfy
+`(constantp <list>)` it should be quoted like '(<list) so the code has been updated
+to support validation and compilation of templates that are constructed with quotes
+like \`'(<list>).
+
+I have integrated the tests with asdf so `(asdf:test-system :validate-list)`
+should run seemlessly.
+
+Compiled functions are now given a declaration of (speed 3) and (safety 1), making
+them even faster than before.
+
+## Download
+
+grab from quicklisp
+```lisp
+(ql:quickload :validate-list)
+(asdf:test-system :validate-list)
+;inform me if any fail
+(in-package :validate-list)
+```
+
+##
 
 This is an attempt at using templates to validate the contents of a list. 
 The idea came because when you parse json from an untrusted source you don't know for certain what 
@@ -140,27 +168,27 @@ Here are some tests:
 
 ```lisp
 
-VALIDATE-LIST> (time (dotimes (i 1000000)
-                       (validate-list *test-list8* *test-template8*)))
+V-L-TESTS> (time (dotimes (i 1000000)
+                   (validate-list *test-list8* *test-template8*)))
 Evaluation took:
-  5.684 seconds of real time
-  5.704452 seconds of total run time (5.687283 user, 0.017169 system)
-  [ Run times consist of 0.168 seconds GC time, and 5.537 seconds non-GC time. ]
-  100.35% CPU
-  14,732,501,992 processor cycles
-  2,415,997,280 bytes consed
+  4.643 seconds of real time
+  4.658734 seconds of total run time (4.613572 user, 0.045162 system)
+  [ Run times consist of 0.221 seconds GC time, and 4.438 seconds non-GC time. ]
+  100.34% CPU
+  12,035,600,724 processor cycles
+  2,415,984,640 bytes consed
   
 NIL
-VALIDATE-LIST> (let ((fun (compile-template *test-template8*)))
-                 (time (dotimes (i 1000000)
-                         (funcall fun *test-list8*))))
+V-L-TESTS> (let ((fun (compile-template *test-template8*)))
+             (time (dotimes (i 1000000)
+                     (funcall fun *test-list8*))))
 Evaluation took:
-  2.749 seconds of real time
-  2.751574 seconds of total run time (2.748586 user, 0.002988 system)
-  [ Run times consist of 0.018 seconds GC time, and 2.734 seconds non-GC time. ]
-  100.11% CPU
-  7,126,663,684 processor cycles
-  192,020,368 bytes consed
+  2.020 seconds of real time
+  2.021337 seconds of total run time (2.020652 user, 0.000685 system)
+  [ Run times consist of 0.025 seconds GC time, and 1.997 seconds non-GC time. ]
+  100.05% CPU
+  5,237,150,378 processor cycles
+  191,993,040 bytes consed
   
 NIL
 VALIDATE-LIST> 
@@ -180,15 +208,46 @@ here is the doctsring:<br>
 ```lisp
 
 (define-key :n= 
-                (lambda (entry arg) 
-                  (check-type entry number)
-                  (check-type arg number)
-                  (= arg entry)))
+   (lambda (entry arg) 
+              (check-type entry number)
+              (check-type arg number)
+              (= arg entry)))
                   
 ```
 
 > Now with the new keyword :n= defined this can be used in a template like so where list is '(100)
 > and the template is '((:n= 100)). 
+
+Here are a couple of examples taken from Moonbot, my bot for Matrix.
+
+```lisp
+(validate-list:define-key :valid-user
+  'validate-user)
+
+(defun validate-user (entry x)
+  "Given a list and an integer (X), takes the X position from the list and 
+checks if it is a valid user"
+  (declare (special community connection))
+  (let ((user (elt entry x)))
+    (if (find user (members community) :test #'string=)
+        t 
+        (valid-user-p connection (elt entry x)))))
+
+(validate-list:define-key :valid-room
+  'validate-room)
+
+(defun validate-room (entry x)
+  (declare (special community))
+  (find (elt entry x) (rooms community) :test #'string=))
+
+(validate-list:define-key :valid-community
+  'validate-community)
+
+(defun validate-community (entry x)
+  (declare (special moonbot))
+  (find (intern (string-upcase (elt entry x)) :keyword)
+        (communities moonbot) :key #'name))
+```
 
 ## Other
 
