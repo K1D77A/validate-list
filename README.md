@@ -265,7 +265,7 @@ It has three accessors<br>
 * bad-template-format-signaller - The condition that caused ``bad-template-format`` to be signalled this is not always set.
 * bad-template-format-message - A descriptive message stating what happened.
 <br>
-The condition  `failed-to-validate`  is signalled when validation fails when the structure of the
+The condition  ``failed-to-validate``  is signalled when validation fails when the structure of the
 TEMPLATE is valid for the list passed. 
 It has four accessors<br>
 
