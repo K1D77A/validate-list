@@ -8,7 +8,7 @@ compiled form using `(compile-template ..)`, by constant it would mean something
 `(validate-list <my list> '((im a template)))` For a list to be satisfy
 `(constantp <list>)` it should be quoted like `'(<list>)` so the code has been updated
 to support validation and compilation of templates that are constructed with quotes
-like `\`'(<list>)`.
+like \`'(<list>).
 
 I have integrated the tests with asdf so `(asdf:test-system :validate-list)`
 should run seemlessly.
