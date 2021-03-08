@@ -3,9 +3,9 @@
 
 ## update notes
 
-Now with a compiler macro that will convert constant templates straight into their
+Now with a compiler macro that will convert templates that are immutalbe straight into their
 compiled form using `(compile-template ..)`, by constant it would mean something like
-`(validate-list <my list> '((im a template)))` For a list to be satisfy
+`(validate-list <my list> '((im a template)))` For a list to satisfy
 `(constantp <list>)` it should be quoted like `'(<list>)` so the code has been updated
 to support validation and compilation of templates that are constructed with quotes
 like \`'(<list>).
